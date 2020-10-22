@@ -5,6 +5,8 @@
 #include <vector>
 #include <algorithm>
 
+#include "upcxx_utils.hpp"
+
 struct Int3D {
 
   int64_t x, y, z;
@@ -53,16 +55,15 @@ class Lung {
 public:
 
  Lung() {
-   std::cout <<"Data folder: " << dataFolder << std::endl;
-   std::cout << "Executable working directory: ";
+   SLOG("Data folder: ", dataFolder, "\n");
    char pBuf[256];
    ssize_t len = sizeof(pBuf);
    int bytes = min(readlink("/proc/self/exe", pBuf, len), len - 1);
    if (bytes >= 0) {
      pBuf[bytes] = '\0';
-     std::cout << pBuf << std::endl;
+     SLOG("Executable working directory: ", pBuf, "\n");
    } else {
-     std::cout << "FAILED" << std::endl;
+     SWARN("Could not find executable working directory\n");
    }
  }
 
@@ -116,7 +117,7 @@ public:
 
  private:
 
-   string dataFolder = "/mnt/c/Users/3n571w2/Downloads/simcov/data/";
+   string dataFolder = "/home/users/shofmeyr/code/simcov/data/";
    bool isSkeleton = true;//false;//
    int model = 0;//1;//
    int startIndex = 0;
@@ -287,11 +288,10 @@ public:
          levels.push_back(e);
          maxDepth++;
        }
-       std::cout << "Loaded " << levels.size() <<" estimated levels"<<std::endl;
+       SLOG("Loaded ", levels.size(), " estimated levels\n");
        file.close();
      } else {
-       std::cout << "Failed open file: " << dataFolder+"table.txt" << std::endl;
-       std::exit(1);
+       SDIE("Failed to open file: ", dataFolder + "table.txt");
      }
    }
 
@@ -334,11 +334,10 @@ public:
            levels.push_back(e);
          }
        }
-       std::cout << "Loaded " << levels.size() << " airway segments"<<std::endl;
+       SLOG("Loaded ", levels.size(), " airway segments\n");
        file.close();
      } else {
-       std::cout << "Failed open file: " << dataFolder+"table.csv" << std::endl;
-       std::exit(1);
+       SDIE("Failed to open file: ", dataFolder + "table.csv");
      }
    }
 
