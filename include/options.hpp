@@ -145,6 +145,11 @@ class Options {
   double antibody_factor = 1;
   int antibody_period = 900;
 
+  string lung_model_dir = ".";
+  bool lung_model_is_skeleton = true;
+  string lung_model_type = "algorithmic";
+
+
   unsigned rnd_seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
   string output_dir = "simcov-run-n" + to_string(upcxx::rank_n()) + "-N" +
                       to_string(upcxx::rank_n() / upcxx::local_team().rank_n()) + "-" +
@@ -252,6 +257,15 @@ class Options {
     app.add_flag("--tcells-follow-gradient", tcells_follow_gradient,
                  "T cells in tissue follow the chemokine gradient")
         ->capture_default_str();
+    app.add_option("--lung-model-dir", lung_model_dir, "Directory containing lung model files")
+        ->capture_default_str();
+    app.add_option("--lung-model-type", lung_model_type,
+                   "Type of lung model: algorithmic or empirical")
+        ->capture_default_str();
+    app.add_flag("--lung-model-is-skeleton", lung_model_is_skeleton,
+                 "True if the lung model is a skeleton")
+        ->capture_default_str();
+
     app.add_option("-r,--seed", rnd_seed, "Random seed")->capture_default_str();
     app.add_option("--sample-period", sample_period,
                    "Number of timesteps between samples (set to 0 to disable sampling)")

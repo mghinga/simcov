@@ -7,6 +7,11 @@
 
 #include "upcxx_utils.hpp"
 
+#include "options.hpp"
+
+extern shared_ptr<Options> _options;
+
+
 struct Int3D {
 
   int64_t x, y, z;
@@ -52,74 +57,49 @@ struct Level {
 
 class Lung {
 
-public:
+ public:
+  Lung() {
+    gridSize.x = _options->dimensions[0];
+    gridSize.y = _options->dimensions[1];
+    gridSize.z = _options->dimensions[2];
 
- Lung() {
-   SLOG("Data folder: ", dataFolder, "\n");
-   char pBuf[256];
-   ssize_t len = sizeof(pBuf);
-   int bytes = min(readlink("/proc/self/exe", pBuf, len), len - 1);
-   if (bytes >= 0) {
-     pBuf[bytes] = '\0';
-     SLOG("Executable working directory: ", pBuf, "\n");
-   } else {
-     SWARN("Could not find executable working directory\n");
-   }
- }
+    if (_options->lung_model_type == "algorithmic") {
+      // algorithmic
+      loadEstimatedParameters();
+      // Draw root
+      Level lvl = levels.at(startIndex);
+      Int3D child = buildSegment({gridSize.x / 2 - lvl.d, gridSize.y / 2, 0}, lvl);
+      // Recursively build tree
+      build(child, (startIndex + 1), lvl.bAngle);
+    } else if (_options->lung_model_type == "empirical") {
+      // empirical
+      loadEmpiricalData();
+      // Draw all segments
+      for (int i = 0; i < airwaysLimit && i < levels.size(); i++) {
+        if (levels.at(i).L < 1 || levels.at(i).d < 1) {
+          skipped++;
+          continue;
+        }
+        buildSegment(levels.at(i));
+      }
+    } else {
+      SDIE("Invalid lung model type ", _options->lung_model_type,
+           " should be 'empirical' or 'algorithmic'");
+    }
+  }
 
- ~Lung() {}
+  ~Lung() {}
 
- const std::set<int64_t>& getEpiCellIds() {
-   return epiCellPositions1D;
- }
+  const std::set<int64_t> &getEpiCellIds() { return epiCellPositions1D; }
 
- const std::vector<Int3D>& getEpiLocations() {
-   return epiCellPositions3D;
- }
+  const std::vector<Int3D> &getEpiLocations() { return epiCellPositions3D; }
 
- const std::vector<Level>& getLevels() {
-   return levels;
- }
+  const std::vector<Level> &getLevels() { return levels; }
 
- int getSkippedAirwayCount() {
-   return skipped;
- }
-
- void init(int64_t grid_x, int64_t grid_y, int64_t grid_z) {
-   gridSize.x = grid_x;
-   gridSize.y = grid_y;
-   gridSize.z = grid_z;
-   switch (model) {
-     case 0: {
-       loadEstimatedParameters();
-       // Draw root
-       Level lvl = levels.at(startIndex);
-       Int3D child = buildSegment({gridSize.x/2 - lvl.d, gridSize.y/2, 0}, lvl);
-       // Recursively build tree
-       build(child, (startIndex + 1), lvl.bAngle);
-       break;
-     }
-     case 1: {
-       loadEmpiricalData();
-       // Draw all segments
-       for (int i = 0; i < airwaysLimit && i < levels.size(); i++) {
-         if (levels.at(i).L < 1 || levels.at(i).d < 1) {
-           skipped++;
-           continue;
-         }
-         buildSegment(levels.at(i));
-       }
-       break;
-     }
-     default: break;
-   }
- }
+  int getSkippedAirwayCount() { return skipped; }
 
  private:
 
-   string dataFolder = "/home/users/shofmeyr/code/simcov/data/";
-   bool isSkeleton = true;//false;//
-   int model = 0;//1;//
    int startIndex = 0;
    int maxDepth = 0; // Yeh et al 1980
    int airwaysLimit = 9999, skipped = 0; // Bauer et al 2019
@@ -182,7 +162,7 @@ public:
      double az = 0;
      double inc = M_PI / 2;
      for (int64_t z = 0; z <= level.L; z++) {
-       if (isSkeleton) {
+       if (_options->lung_model_is_skeleton) {
          epiCellPositions3D.push_back({.x = 0, .y = 0, .z = z});
        } else {
          for (az = 0; az < 2 * M_PI; az += M_PI / 180) {
@@ -226,7 +206,7 @@ public:
      int64_t radius = level.d;
      double az = 0, inc = M_PI / 2;
      for (int64_t z = 0; z <= level.L; z++) {
-       if (isSkeleton) {
+       if (_options->lung_model_is_skeleton) {
          epiCellPositions3D.push_back({.x = 0, .y = 0, .z = z});
        } else {
          for (az = 0; az < 2 * M_PI; az += M_PI / 180) {
@@ -237,8 +217,7 @@ public:
        }
      }
      // Treat as positional vectors and apply rotations and translate
-     az = (level.direction.x == 0) ? 0 : atan(level.direction.y
-         / level.direction.x);
+     az = (level.direction.x == 0) ? 0 : atan(level.direction.y / level.direction.x);
      inc = acos(level.direction.z);
      for (int64_t i = 0; i < epiCellPositions3D.size(); i++) {
          Int3D newPosition0 = rotate(epiCellPositions3D.at(i),
@@ -252,12 +231,11 @@ public:
          newPosition0.z += level.centroid.z;
          epiCellPositions3D.at(i) = newPosition0;
          // Verify new location is within grid
-         if ((0 <= newPosition0.x && newPosition0.x < gridSize.x)
-          && (0 <= newPosition0.y && newPosition0.y < gridSize.y)
-          && (0 <= newPosition0.z && newPosition0.z < gridSize.z)) {
-            epiCellPositions1D.insert(newPosition0.x
-              + newPosition0.y * gridSize.x
-              + newPosition0.z * gridSize.x * gridSize.y);
+         if ((0 <= newPosition0.x && newPosition0.x < gridSize.x) &&
+             (0 <= newPosition0.y && newPosition0.y < gridSize.y) &&
+             (0 <= newPosition0.z && newPosition0.z < gridSize.z)) {
+           epiCellPositions1D.insert(newPosition0.x + newPosition0.y * gridSize.x +
+                                     newPosition0.z * gridSize.x * gridSize.y);
          }
        }
    }
@@ -265,7 +243,7 @@ public:
    void loadEstimatedParameters() {
      // Yeh et al 1980
      std::ifstream file;
-     file.open(dataFolder + "table.txt");
+     file.open(_options->lung_model_dir + "/table.txt");
      maxDepth = 0;
      std::string line;
      double m = 10; // Convert cm to mm
@@ -291,14 +269,14 @@ public:
        SLOG("Loaded ", levels.size(), " estimated levels\n");
        file.close();
      } else {
-       SDIE("Failed to open file: ", dataFolder + "table.txt");
+       SDIE("Failed to open file ", _options->lung_model_dir + "/table.txt");
      }
    }
 
    void loadEmpiricalData() {
      // Bauer et al 2019
      std::ifstream file;
-     file.open(dataFolder + "table.csv");
+     file.open(_options->lung_model_dir + "/table.csv");
      std::string line;
      double m = 10; // Convert 10^0 mm to 10^1 mm
      if (file.is_open()) {
@@ -337,7 +315,7 @@ public:
        SLOG("Loaded ", levels.size(), " airway segments\n");
        file.close();
      } else {
-       SDIE("Failed to open file: ", dataFolder + "table.csv");
+       SDIE("Failed to open file ", _options->lung_model_dir + "/table.csv");
      }
    }
 

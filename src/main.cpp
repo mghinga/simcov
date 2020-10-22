@@ -654,7 +654,6 @@ int main(int argc, char **argv) {
   auto start_free_mem = get_free_mem();
   SLOG(KBLUE, "Starting with ", get_size_str(start_free_mem), " free on node 0", KNORM, "\n");
   Lung lung;
-  lung.init(200, 200, 200);
   Tissue tissue;
   tissue.construct({_options->dimensions[0],
       _options->dimensions[1],
