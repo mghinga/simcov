@@ -184,7 +184,8 @@ class Tissue {
 
   ~Tissue() {}
 
-  void construct(GridCoords grid_size);
+  void construct(GridCoords grid_size,
+    const std::set<int64_t> & epiCellIds);
 
   int64_t get_num_local_grid_points();
 
@@ -227,4 +228,3 @@ class Tissue {
 #endif
 
 };
-

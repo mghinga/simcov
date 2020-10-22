@@ -20,6 +20,7 @@ using namespace std;
 #include "tissue.hpp"
 #include "upcxx_utils.hpp"
 #include "utils.hpp"
+#include "lung.hpp"
 
 using namespace upcxx;
 using namespace upcxx_utils;
@@ -515,7 +516,7 @@ void run_sim(Tissue &tissue) {
 
   auto start_t = NOW();
   auto curr_t = start_t;
-  auto five_perc = _options->num_timesteps / 50;
+  auto five_perc = (_options->num_timesteps >= 50) ?  _options->num_timesteps/50 : 1;
   _sim_stats.init();
   SLOG("# datetime     elapsed step    ", _sim_stats.header(),
        "\t<%active  lbln>\n");
@@ -550,6 +551,7 @@ void run_sim(Tissue &tissue) {
             grid_point->coords.z, "\t", grid_point->virions, "\n");
       if (!warned_boundary && (!grid_point->coords.x || !grid_point->coords.y ||
           (_grid_size->z > 1 && !grid_point->coords.z)) &&
+          grid_point->epicell &&
           grid_point->epicell->status != EpiCellStatus::HEALTHY) {
         WARN("Hit boundary at ", grid_point->coords.str(), " ", grid_point->epicell->str(),
               " virions ", grid_point->virions, " chemokine ", grid_point->chemokine);
@@ -560,7 +562,7 @@ void run_sim(Tissue &tissue) {
       // the tcells are moved (added to the new list, but only cleared out at the end of all
       // updates)
       if (grid_point->tcell) update_tissue_tcell(time_step, tissue, grid_point, chemokines_cache);
-      update_epicell(time_step, tissue, grid_point);
+      if (grid_point->epicell) update_epicell(time_step, tissue, grid_point);
       update_chemokines(grid_point, chemokines_to_update);
       update_virions(grid_point, virions_to_update);
       if (grid_point->is_active()) tissue.set_active(grid_point);
@@ -652,8 +654,13 @@ int main(int argc, char **argv) {
   memory_tracker.start();
   auto start_free_mem = get_free_mem();
   SLOG(KBLUE, "Starting with ", get_size_str(start_free_mem), " free on node 0", KNORM, "\n");
+  Lung lung;
+  lung.init(200, 200, 200);
   Tissue tissue;
-  tissue.construct({_options->dimensions[0], _options->dimensions[1], _options->dimensions[2]});
+  tissue.construct({_options->dimensions[0],
+      _options->dimensions[1],
+      _options->dimensions[2]},
+    lung.getEpiCellIds());
   initial_infection(tissue);
   SLOG(KBLUE, "Memory used on node 0 after initialization is  ",
        get_size_str(start_free_mem - get_free_mem()), KNORM, "\n");

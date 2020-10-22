@@ -1,6 +1,5 @@
 .build
 .dir-locals.el
 install
-data
 .vscode
 __pycache__

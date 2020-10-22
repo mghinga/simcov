@@ -397,7 +397,8 @@ static int get_square_block_dim(int64_t num_grid_points) {
   return block_dim;
 }
 
-void Tissue::construct(GridCoords grid_size) {
+void Tissue::construct(GridCoords grid_size,
+  const std::set<int64_t> & epiCellIds) {
   auto remainder = [](int64_t numerator, int64_t denominator) -> bool {
     return ((double)numerator / denominator - (numerator / denominator) != 0);
   };
@@ -452,10 +453,15 @@ void Tissue::construct(GridCoords grid_size) {
       auto neighbors = get_neighbors(coords);
       // infectable epicells should be placed according to the underlying lung structure
       // (gaps, etc)
-      EpiCell *epicell = new EpiCell(id);
-      if ((coords.x + coords.y + coords.z) % _options->infectable_spacing != 0)
-        epicell->infectable = false;
-      grid_points->emplace_back(GridPoint({id, coords, neighbors, epicell}));
+      if (epiCellIds.count(id) != 0) {
+        EpiCell *epicell = new EpiCell(id);
+        if ((coords.x + coords.y + coords.z) % _options->infectable_spacing != 0)
+          epicell->infectable = false;
+        grid_points->emplace_back(GridPoint({id, coords, neighbors, epicell}));
+      } else {
+        grid_points->emplace_back(GridPoint({id, coords, neighbors, nullptr}));
+      }
+
 #ifdef DEBUG
       DBG("adding grid point ", id, " at ", coords.str(), "\n");
       auto id_1d = coords.to_1d();
