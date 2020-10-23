@@ -74,7 +74,7 @@ class Lung {
       // empirical
       loadEmpiricalData();
       // Draw all segments
-      for (int i = 0; i < airwaysLimit && i < levels.size(); i++) {
+      for (int i = 0; i < levels.size(); i++) {
         if (levels.at(i).L < 1 || levels.at(i).d < 1) {
           skipped++;
           continue;
