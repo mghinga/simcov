@@ -6,11 +6,9 @@
 #include <algorithm>
 
 #include "upcxx_utils.hpp"
-
 #include "options.hpp"
 
 extern shared_ptr<Options> _options;
-
 
 struct Int3D {
 
@@ -58,6 +56,7 @@ struct Level {
 class Lung {
 
  public:
+
   Lung() {
     gridSize.x = _options->dimensions[0];
     gridSize.y = _options->dimensions[1];
@@ -67,10 +66,10 @@ class Lung {
       // algorithmic
       loadEstimatedParameters();
       // Draw root
-      Level lvl = levels.at(startIndex);
+      Level lvl = levels.at(0);
       Int3D child = buildSegment({gridSize.x / 2 - lvl.d, gridSize.y / 2, 0}, lvl);
       // Recursively build tree
-      build(child, (startIndex + 1), lvl.bAngle);
+      build(child, 1, lvl.bAngle);
     } else if (_options->lung_model_type == "empirical") {
       // empirical
       loadEmpiricalData();
@@ -100,9 +99,7 @@ class Lung {
 
  private:
 
-   int startIndex = 0;
-   int maxDepth = 0; // Yeh et al 1980
-   int airwaysLimit = 9999, skipped = 0; // Bauer et al 2019
+   int skipped = 0; // Bauer et al 2019
    //TODO std::vector<Int3D> leafs;
    std::vector<Level> levels;
    std::vector<Int3D> epiCellPositions3D;
@@ -136,7 +133,7 @@ class Lung {
    void build(const Int3D & root,
      int generation,
      double previousBranchAngle) {
-       if (generation > (maxDepth - 1)) {
+       if (generation > (levels.size() - 1)) {
          //TODO leafs.add(root);
          return;
        }
@@ -244,7 +241,6 @@ class Lung {
      // Yeh et al 1980
      std::ifstream file;
      file.open(_options->lung_model_dir + "/table.txt");
-     maxDepth = 0;
      std::string line;
      double m = 10; // Convert cm to mm
      if (file.is_open()) {
@@ -264,7 +260,6 @@ class Lung {
          lstream >> tempI;
          e.gAngle = tempI * M_PI / 180;
          levels.push_back(e);
-         maxDepth++;
        }
        SLOG("Loaded ", levels.size(), " estimated levels\n");
        file.close();

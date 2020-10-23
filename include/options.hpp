@@ -146,7 +146,7 @@ class Options {
   int antibody_period = 900;
 
   string lung_model_dir = ".";
-  bool lung_model_is_skeleton = true;
+  bool lung_model_is_skeleton = false;
   string lung_model_type = "algorithmic";
 
 
@@ -350,4 +350,3 @@ class Options {
     return true;
   }
 };
-
