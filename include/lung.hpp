@@ -7,42 +7,9 @@
 
 #include "upcxx_utils.hpp"
 #include "options.hpp"
+#include "alveolar.hpp"
 
 extern shared_ptr<Options> _options;
-
-struct Int3D {
-
-  int64_t x, y, z;
-
-  Int3D() : x(0), y(0), z(0) {}
-
-  Int3D(int64_t x, int64_t y, int64_t z) : x(x), y(y), z(z) {}
-
-  Int3D & operator=(const Int3D &val) {
-    x = val.x;
-    y = val.y;
-    z = val.z;
-    return *this;
-  }
-
-};
-
-struct Double3D {
-
-  double x, y, z;
-
-  Double3D() : x(0.0), y(0.0), z(0.0) {}
-
-  Double3D(double x, double y, double z) : x(x), y(y), z(z) {}
-
-  Double3D & operator=(const Double3D &val) {
-    x = val.x;
-    y = val.y;
-    z = val.z;
-    return *this;
-  }
-
-};
 
 struct Level {
 
@@ -61,25 +28,31 @@ class Lung {
     gridSize.x = _options->dimensions[0];
     gridSize.y = _options->dimensions[1];
     gridSize.z = _options->dimensions[2];
-
     if (_options->lung_model_type == "algorithmic") {
       // algorithmic
       loadEstimatedParameters();
       // Draw root
       Level lvl = levels.at(0);
-      Int3D child = buildSegment({gridSize.x / 2 - lvl.d, gridSize.y / 2, 0}, lvl);
+      Int3D child = constructSegment({gridSize.x / 2 - lvl.d, gridSize.y / 2, 0}, lvl);
       // Recursively build tree
-      build(child, 1, lvl.bAngle);
+      construct(child, 1, lvl.bAngle);
+      // Build alveolus structures
+      Alveolar av;
+      for (Int3D leaf : leafs) {
+        av.construct(leaf);
+        std::set<int64_t> e = getEpiCellIds();
+        epiCellPositions1D.insert(e.begin(), e.end());
+      }
     } else if (_options->lung_model_type == "empirical") {
       // empirical
       loadEmpiricalData();
       // Draw all segments
-      for (int i = 0; i < airwaysLimit && i < levels.size(); i++) {
+      for (int i = 0; i < levels.size(); i++) {
         if (levels.at(i).L < 1 || levels.at(i).d < 1) {
           skipped++;
           continue;
         }
-        buildSegment(levels.at(i));
+        constructSegment(levels.at(i));
       }
     } else {
       SDIE("Invalid lung model type ", _options->lung_model_type,
@@ -100,10 +73,10 @@ class Lung {
  private:
 
    int skipped = 0; // Bauer et al 2019
-   //TODO std::vector<Int3D> leafs;
+   std::vector<Int3D> leafs;
    std::vector<Level> levels;
-   std::vector<Int3D> epiCellPositions3D;
    std::set<int64_t> epiCellPositions1D;
+   std::vector<Int3D> epiCellPositions3D;
    Int3D gridSize;
 
    Int3D rotate(const Int3D & vec,
@@ -130,29 +103,29 @@ class Lung {
     return rval;
    }
 
-   void build(const Int3D & root,
+   void construct(const Int3D & root,
      int generation,
      double previousBranchAngle) {
        if (generation > (levels.size() - 1)) {
-         //TODO leafs.add(root);
+         leafs.push_back({.x = root.x, .y = root.y, .z = root.z});
          return;
        }
        // Draw left child bronchiole
        Level lvl = levels.at(generation);
        lvl.bAngle = previousBranchAngle - lvl.bAngle;
-       Int3D child = buildSegment(root, lvl);
-       build(child, generation + 1, lvl.bAngle);
+       Int3D child = constructSegment(root, lvl);
+       construct(child, generation + 1, lvl.bAngle);
        // Draw right child bronchiole
        lvl = levels.at(generation);
        lvl.bAngle = previousBranchAngle + lvl.bAngle;
        if (lvl.count > 1) {
          lvl.gAngle = -lvl.gAngle;
-         child = buildSegment(root, lvl);
-         build(child, generation + 1, lvl.bAngle);
+         child = constructSegment(root, lvl);
+         construct(child, generation + 1, lvl.bAngle);
        }
      }
 
-   Int3D buildSegment(const Int3D &root, const Level &level) {
+   Int3D constructSegment(const Int3D &root, const Level &level) {
      std::vector<Int3D> epiCellPositions3D;
      // Build cylinder at origin along y-axis
      int64_t radius = level.d / 2;
@@ -197,7 +170,7 @@ class Lung {
      return rval;
    }
 
-   void buildSegment(const Level &level) {
+   void constructSegment(const Level &level) {
      std::vector<Int3D> epiCellPositions3D;
      // Build cylinder at origin along y-axis
      int64_t radius = level.d;

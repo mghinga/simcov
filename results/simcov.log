@@ -1,0 +1,898 @@
+2020-10-28 15:06:55 SimCov version SimCov version 0.1.1.aeb67cc-dirty-fixed_blocks_with_lung_model built on 20201028_150628
+2020-10-28 15:06:55 _________________________
+2020-10-28 15:06:55 Compiler definitions:
+2020-10-28 15:06:55   _XOPEN_SOURCE=700
+2020-10-28 15:06:55   CONFIG_USE_COLORS
+2020-10-28 15:06:55   USE_BYTELL
+2020-10-28 15:06:55   MAX_VIRIONS=125000
+2020-10-28 15:06:55 _________________________
+2020-10-28 15:06:55 Options:
+2020-10-28 15:06:55   dim =                         5 5 5
+2020-10-28 15:06:55   timesteps =                   1
+2020-10-28 15:06:55   infections =                  1
+2020-10-28 15:06:55   infection-coords =            -1 -1 -1
+2020-10-28 15:06:55   initial-infection =           1000
+2020-10-28 15:06:55   infectable-spacing =          1
+2020-10-28 15:06:55   incubation-period =           100
+2020-10-28 15:06:55   apoptosis-period =            30
+2020-10-28 15:06:55   expressing-period =           100
+2020-10-28 15:06:55   infectivity =                 0.0001
+2020-10-28 15:06:55   virion-production =           100
+2020-10-28 15:06:55   virion-decay =                0.1
+2020-10-28 15:06:55   virion-diffusion =            0.5
+2020-10-28 15:06:55   chemokine-production =        0.5
+2020-10-28 15:06:55   chemokine-decay =             0.01
+2020-10-28 15:06:55   chemokine-diffusion =         0.2
+2020-10-28 15:06:55   min-chemokine =               0.001
+2020-10-28 15:06:55   antibody-factor =             1
+2020-10-28 15:06:55   antibody-period =             900
+2020-10-28 15:06:55   tcell-generation-rate =       5
+2020-10-28 15:06:55   tcell-initial-delay =         1000
+2020-10-28 15:06:55   tcell-vascular-period =       600
+2020-10-28 15:06:55   tcell-tissue-period =         60
+2020-10-28 15:06:55   tcell-binding-period =        5
+2020-10-28 15:06:55   max-binding-prob =            0.1
+2020-10-28 15:06:55   lung-model-dir =              /mnt/c/Users/3n571w2/Downloads/simcov/data/
+2020-10-28 15:06:55   lung-model-type =             algorithmic
+2020-10-28 15:06:55   seed =                        1043568172
+2020-10-28 15:06:55   sample-period =               1
+2020-10-28 15:06:55   sample-resolution =           1
+2020-10-28 15:06:55   min-blocks-per-proc =         16
+2020-10-28 15:06:55   output =                      results
+2020-10-28 15:06:55   progress =                    true
+2020-10-28 15:06:55   verbose =                     true
+2020-10-28 15:06:55 _________________________
+2020-10-28 15:06:55 Starting run with 1 processes on 1 node at 10/28/20 15:06:55
+2020-10-28 15:06:55 Pinned processes, with process 0 (pid 13000) pinned to core 0
+2020-10-28 15:06:55 Initial free memory across all nodes: 8.91GB
+2020-10-28 15:06:55 Starting with 8.91GB free on node 0
+2020-10-28 15:06:55 [0] <tissue.cpp:410> WARNING: Using a block size of 1: this will result in a lot of communication. You should change the dimensions.
+2020-10-28 15:06:55 Dividing 125 grid points into 125 blocks of size 1 (1^3), with 125 per process
+2020-10-28 15:06:55 Total initial memory required per process is a max of 11.72KB
+2020-10-28 15:06:55  --- Elapsed time for tissue.cpp:construct:  (exiting barrier) 2020-10-28 15:06:55 ...
+2020-10-28 15:06:55           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:06:55           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:06:55 * Setting initial infections... 
+2020-10-28 15:06:55   min 0.00 Average 0.00 max 0.00 (balance 1.00)
+2020-10-28 15:06:55  --- Elapsed time for main.cpp:initial_infection:  (exiting barrier) 2020-10-28 15:06:55 ...
+2020-10-28 15:06:55           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:06:55 Memory used on node 0 after initialization is  18.88MB
+2020-10-28 15:06:55           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:06:55 # datetime     elapsed step    incb	expr	apop	dead	tvas	ttis	chem	virs	<%active  lbln>
+2020-10-28 15:06:55 [201028150655  0.00s]: 0       0	0	0	0	0	0	0.00e+00	0.00e+002020-10-28 15:06:55 	< 0.800 1.000 >
+2020-10-28 15:06:55  ---  main.cpp:generate tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:06:55  ---  main.cpp:update circulating tcells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:06:55  ---  main.cpp:update tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:06:55  ---  main.cpp:update epicells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:06:55  ---  main.cpp:update concentrations took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:06:55  ---  main.cpp:compute updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:06:55  ---  main.cpp:dispatch updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:06:55  ---  main.cpp:add new actives took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:06:55  ---  main.cpp:erase inactive took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:06:55  ---  main.cpp:sample took  avg 0.02 s max 0.02 s balance 1.00  --- 
+2020-10-28 15:06:55  ---  main.cpp:log took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:06:55 Finished 1 time steps in 0.0279 s (0.0279 s per step)
+2020-10-28 15:06:55  --- Elapsed time for main.cpp:run_sim:  (exiting barrier) 2020-10-28 15:06:55 ...
+2020-10-28 15:06:55           ... (min/my/avg/max, bal) (0.03/0.03/0.03/0.03 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:06:55 Peak memory used across all nodes: 17.88MB
+2020-10-28 15:06:55 Finished in 0.57 s at 10/28/20 15:06:55 for SimCov version 0.1.1.aeb67cc-dirty
+
+
+==========  RESTART  ==================
+
+2020-10-28 15:23:01 SimCov version SimCov version 0.1.1.aeb67cc-dirty-fixed_blocks_with_lung_model built on 20201028_152020
+2020-10-28 15:23:01 _________________________
+2020-10-28 15:23:01 Compiler definitions:
+2020-10-28 15:23:01   _XOPEN_SOURCE=700
+2020-10-28 15:23:01   CONFIG_USE_COLORS
+2020-10-28 15:23:01   USE_BYTELL
+2020-10-28 15:23:01   MAX_VIRIONS=125000
+2020-10-28 15:23:01 _________________________
+2020-10-28 15:23:01 Options:
+2020-10-28 15:23:01   dim =                         5 5 5
+2020-10-28 15:23:01   timesteps =                   1
+2020-10-28 15:23:01   infections =                  1
+2020-10-28 15:23:01   infection-coords =            -1 -1 -1
+2020-10-28 15:23:01   initial-infection =           1000
+2020-10-28 15:23:01   infectable-spacing =          1
+2020-10-28 15:23:01   incubation-period =           100
+2020-10-28 15:23:01   apoptosis-period =            30
+2020-10-28 15:23:01   expressing-period =           100
+2020-10-28 15:23:01   infectivity =                 0.0001
+2020-10-28 15:23:01   virion-production =           100
+2020-10-28 15:23:01   virion-decay =                0.1
+2020-10-28 15:23:01   virion-diffusion =            0.5
+2020-10-28 15:23:01   chemokine-production =        0.5
+2020-10-28 15:23:01   chemokine-decay =             0.01
+2020-10-28 15:23:01   chemokine-diffusion =         0.2
+2020-10-28 15:23:01   min-chemokine =               0.001
+2020-10-28 15:23:01   antibody-factor =             1
+2020-10-28 15:23:01   antibody-period =             900
+2020-10-28 15:23:01   tcell-generation-rate =       5
+2020-10-28 15:23:01   tcell-initial-delay =         1000
+2020-10-28 15:23:01   tcell-vascular-period =       600
+2020-10-28 15:23:01   tcell-tissue-period =         60
+2020-10-28 15:23:01   tcell-binding-period =        5
+2020-10-28 15:23:01   max-binding-prob =            0.1
+2020-10-28 15:23:01   lung-model-dir =              /mnt/c/Users/3n571w2/Downloads/simcov/data/
+2020-10-28 15:23:01   lung-model-type =             algorithmic
+2020-10-28 15:23:01   seed =                        1117747272
+2020-10-28 15:23:01   sample-period =               1
+2020-10-28 15:23:01   sample-resolution =           1
+2020-10-28 15:23:01   min-blocks-per-proc =         16
+2020-10-28 15:23:01   output =                      results
+2020-10-28 15:23:01   progress =                    true
+2020-10-28 15:23:01   verbose =                     true
+2020-10-28 15:23:01 _________________________
+2020-10-28 15:23:01 Starting run with 1 processes on 1 node at 10/28/20 15:23:01
+2020-10-28 15:23:01 Pinned processes, with process 0 (pid 14218) pinned to core 0
+2020-10-28 15:23:01 Initial free memory across all nodes: 8.36GB
+2020-10-28 15:23:01 Starting with 8.36GB free on node 0
+2020-10-28 15:23:01 [0] <tissue.cpp:410> WARNING: Using a block size of 1: this will result in a lot of communication. You should change the dimensions.
+2020-10-28 15:23:01 Dividing 125 grid points into 125 blocks of size 1 (1^3), with 125 per process
+2020-10-28 15:23:01 Total initial memory required per process is a max of 11.72KB
+2020-10-28 15:23:01  --- Elapsed time for tissue.cpp:construct:  (exiting barrier) 2020-10-28 15:23:01 ...
+2020-10-28 15:23:01           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:23:01           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:23:01 * Setting initial infections... 
+2020-10-28 15:23:01   min 0.00 Average 0.00 max 0.00 (balance 1.00)
+2020-10-28 15:23:01  --- Elapsed time for main.cpp:initial_infection:  (exiting barrier) 2020-10-28 15:23:01 ...
+2020-10-28 15:23:01           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:23:01 Memory used on node 0 after initialization is  976.00KB
+2020-10-28 15:23:01           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:23:01 # datetime     elapsed step    incb	expr	apop	dead	tvas	ttis	chem	virs	<%active  lbln>
+2020-10-28 15:23:01 [201028152301  0.00s]: 0       0	0	0	0	0	0	0.00e+00	0.00e+002020-10-28 15:23:01 	< 0.800 1.000 >
+2020-10-28 15:23:01  ---  main.cpp:generate tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:23:01  ---  main.cpp:update circulating tcells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:23:01  ---  main.cpp:update tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:23:01  ---  main.cpp:update epicells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:23:01  ---  main.cpp:update concentrations took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:23:01  ---  main.cpp:compute updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:23:01  ---  main.cpp:dispatch updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:23:01  ---  main.cpp:add new actives took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:23:01  ---  main.cpp:erase inactive took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:23:01  ---  main.cpp:sample took  avg 0.02 s max 0.02 s balance 1.00  --- 
+2020-10-28 15:23:01  ---  main.cpp:log took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:23:01 Finished 1 time steps in 0.0312 s (0.0312 s per step)
+2020-10-28 15:23:01  --- Elapsed time for main.cpp:run_sim:  (exiting barrier) 2020-10-28 15:23:01 ...
+2020-10-28 15:23:01           ... (min/my/avg/max, bal) (0.03/0.03/0.03/0.03 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:23:02 Peak memory used across all nodes: 248.00KB
+2020-10-28 15:23:02 Finished in 0.56 s at 10/28/20 15:23:02 for SimCov version 0.1.1.aeb67cc-dirty
+
+
+==========  RESTART  ==================
+
+2020-10-28 15:24:32 SimCov version SimCov version 0.1.1.aeb67cc-dirty-fixed_blocks_with_lung_model built on 20201028_152411
+2020-10-28 15:24:32 _________________________
+2020-10-28 15:24:32 Compiler definitions:
+2020-10-28 15:24:32   _XOPEN_SOURCE=700
+2020-10-28 15:24:32   CONFIG_USE_COLORS
+2020-10-28 15:24:32   USE_BYTELL
+2020-10-28 15:24:32   MAX_VIRIONS=125000
+2020-10-28 15:24:32 _________________________
+2020-10-28 15:24:32 Options:
+2020-10-28 15:24:32   dim =                         5 5 5
+2020-10-28 15:24:32   timesteps =                   1
+2020-10-28 15:24:32   infections =                  1
+2020-10-28 15:24:32   infection-coords =            -1 -1 -1
+2020-10-28 15:24:32   initial-infection =           1000
+2020-10-28 15:24:32   infectable-spacing =          1
+2020-10-28 15:24:32   incubation-period =           100
+2020-10-28 15:24:32   apoptosis-period =            30
+2020-10-28 15:24:32   expressing-period =           100
+2020-10-28 15:24:32   infectivity =                 0.0001
+2020-10-28 15:24:32   virion-production =           100
+2020-10-28 15:24:32   virion-decay =                0.1
+2020-10-28 15:24:32   virion-diffusion =            0.5
+2020-10-28 15:24:32   chemokine-production =        0.5
+2020-10-28 15:24:32   chemokine-decay =             0.01
+2020-10-28 15:24:32   chemokine-diffusion =         0.2
+2020-10-28 15:24:32   min-chemokine =               0.001
+2020-10-28 15:24:32   antibody-factor =             1
+2020-10-28 15:24:32   antibody-period =             900
+2020-10-28 15:24:32   tcell-generation-rate =       5
+2020-10-28 15:24:32   tcell-initial-delay =         1000
+2020-10-28 15:24:32   tcell-vascular-period =       600
+2020-10-28 15:24:32   tcell-tissue-period =         60
+2020-10-28 15:24:32   tcell-binding-period =        5
+2020-10-28 15:24:32   max-binding-prob =            0.1
+2020-10-28 15:24:32   lung-model-dir =              /mnt/c/Users/3n571w2/Downloads/simcov/data/
+2020-10-28 15:24:32   lung-model-type =             algorithmic
+2020-10-28 15:24:32   seed =                        1603274756
+2020-10-28 15:24:32   sample-period =               1
+2020-10-28 15:24:32   sample-resolution =           1
+2020-10-28 15:24:32   min-blocks-per-proc =         16
+2020-10-28 15:24:32   output =                      results
+2020-10-28 15:24:32   progress =                    true
+2020-10-28 15:24:32   verbose =                     true
+2020-10-28 15:24:32 _________________________
+2020-10-28 15:24:32 Starting run with 1 processes on 1 node at 10/28/20 15:24:32
+2020-10-28 15:24:32 Pinned processes, with process 0 (pid 14827) pinned to core 0
+2020-10-28 15:24:32 Initial free memory across all nodes: 8.43GB
+2020-10-28 15:24:32 Starting with 8.43GB free on node 0
+2020-10-28 15:24:32 [0] <tissue.cpp:410> WARNING: Using a block size of 1: this will result in a lot of communication. You should change the dimensions.
+2020-10-28 15:24:32 Dividing 125 grid points into 125 blocks of size 1 (1^3), with 125 per process
+2020-10-28 15:24:32 Total initial memory required per process is a max of 11.72KB
+2020-10-28 15:24:32  --- Elapsed time for tissue.cpp:construct:  (exiting barrier) 2020-10-28 15:24:32 ...
+2020-10-28 15:24:32           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:24:32           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:24:32 * Setting initial infections... 
+2020-10-28 15:24:32   min 0.00 Average 0.00 max 0.00 (balance 1.00)
+2020-10-28 15:24:32  --- Elapsed time for main.cpp:initial_infection:  (exiting barrier) 2020-10-28 15:24:32 ...
+2020-10-28 15:24:32           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:24:32 Memory used on node 0 after initialization is  664.00KB
+2020-10-28 15:24:32           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:24:32 # datetime     elapsed step    incb	expr	apop	dead	tvas	ttis	chem	virs	<%active  lbln>
+2020-10-28 15:24:32 [201028152432  0.00s]: 0       0	0	0	0	0	0	0.00e+00	0.00e+002020-10-28 15:24:32 	< 0.800 1.000 >
+2020-10-28 15:24:32  ---  main.cpp:generate tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:24:32  ---  main.cpp:update circulating tcells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:24:32  ---  main.cpp:update tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:24:32  ---  main.cpp:update epicells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:24:32  ---  main.cpp:update concentrations took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:24:32  ---  main.cpp:compute updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:24:32  ---  main.cpp:dispatch updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:24:32  ---  main.cpp:add new actives took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:24:32  ---  main.cpp:erase inactive took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:24:32  ---  main.cpp:sample took  avg 0.03 s max 0.03 s balance 1.00  --- 
+2020-10-28 15:24:32  ---  main.cpp:log took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:24:32 Finished 1 time steps in 0.0407 s (0.0407 s per step)
+2020-10-28 15:24:32  --- Elapsed time for main.cpp:run_sim:  (exiting barrier) 2020-10-28 15:24:32 ...
+2020-10-28 15:24:32           ... (min/my/avg/max, bal) (0.04/0.04/0.04/0.04 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:24:32 Peak memory used across all nodes: 1.22MB
+2020-10-28 15:24:32 Finished in 0.55 s at 10/28/20 15:24:32 for SimCov version 0.1.1.aeb67cc-dirty
+
+
+==========  RESTART  ==================
+
+2020-10-28 15:34:15 SimCov version SimCov version 0.1.1.aeb67cc-dirty-fixed_blocks_with_lung_model built on 20201028_153346
+2020-10-28 15:34:15 _________________________
+2020-10-28 15:34:15 Compiler definitions:
+2020-10-28 15:34:15   _XOPEN_SOURCE=700
+2020-10-28 15:34:15   CONFIG_USE_COLORS
+2020-10-28 15:34:15   USE_BYTELL
+2020-10-28 15:34:15   MAX_VIRIONS=125000
+2020-10-28 15:34:15 _________________________
+2020-10-28 15:34:15 Options:
+2020-10-28 15:34:15   dim =                         5 5 5
+2020-10-28 15:34:15   timesteps =                   1
+2020-10-28 15:34:15   infections =                  1
+2020-10-28 15:34:15   infection-coords =            -1 -1 -1
+2020-10-28 15:34:15   initial-infection =           1000
+2020-10-28 15:34:15   infectable-spacing =          1
+2020-10-28 15:34:15   incubation-period =           100
+2020-10-28 15:34:15   apoptosis-period =            30
+2020-10-28 15:34:15   expressing-period =           100
+2020-10-28 15:34:15   infectivity =                 0.0001
+2020-10-28 15:34:15   virion-production =           100
+2020-10-28 15:34:15   virion-decay =                0.1
+2020-10-28 15:34:15   virion-diffusion =            0.5
+2020-10-28 15:34:15   chemokine-production =        0.5
+2020-10-28 15:34:15   chemokine-decay =             0.01
+2020-10-28 15:34:15   chemokine-diffusion =         0.2
+2020-10-28 15:34:15   min-chemokine =               0.001
+2020-10-28 15:34:15   antibody-factor =             1
+2020-10-28 15:34:15   antibody-period =             900
+2020-10-28 15:34:15   tcell-generation-rate =       5
+2020-10-28 15:34:15   tcell-initial-delay =         1000
+2020-10-28 15:34:15   tcell-vascular-period =       600
+2020-10-28 15:34:15   tcell-tissue-period =         60
+2020-10-28 15:34:15   tcell-binding-period =        5
+2020-10-28 15:34:15   max-binding-prob =            0.1
+2020-10-28 15:34:15   lung-model-dir =              /mnt/c/Users/3n571w2/Downloads/simcov/data/
+2020-10-28 15:34:15   lung-model-type =             algorithmic
+2020-10-28 15:34:15   seed =                        909094500
+2020-10-28 15:34:15   sample-period =               1
+2020-10-28 15:34:15   sample-resolution =           1
+2020-10-28 15:34:15   min-blocks-per-proc =         16
+2020-10-28 15:34:15   output =                      results
+2020-10-28 15:34:15   progress =                    true
+2020-10-28 15:34:15   verbose =                     true
+2020-10-28 15:34:15 _________________________
+2020-10-28 15:34:15 Starting run with 1 processes on 1 node at 10/28/20 15:34:15
+2020-10-28 15:34:15 Pinned processes, with process 0 (pid 15436) pinned to core 0
+2020-10-28 15:34:15 Initial free memory across all nodes: 8.54GB
+2020-10-28 15:34:15 Starting with 8.54GB free on node 0
+2020-10-28 15:34:15 [0] <tissue.cpp:410> WARNING: Using a block size of 1: this will result in a lot of communication. You should change the dimensions.
+2020-10-28 15:34:15 Dividing 125 grid points into 125 blocks of size 1 (1^3), with 125 per process
+2020-10-28 15:34:15 Total initial memory required per process is a max of 11.72KB
+2020-10-28 15:34:15  --- Elapsed time for tissue.cpp:construct:  (exiting barrier) 2020-10-28 15:34:15 ...
+2020-10-28 15:34:15           ... (min/my/avg/max, bal) (0.01/0.01/0.01/0.01 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:34:15           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:34:15 * Setting initial infections... 
+2020-10-28 15:34:15   min 0.00 Average 0.00 max 0.00 (balance 1.00)
+2020-10-28 15:34:15  --- Elapsed time for main.cpp:initial_infection:  (exiting barrier) 2020-10-28 15:34:15 ...
+2020-10-28 15:34:15           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:34:15 Memory used on node 0 after initialization is  408.00KB
+2020-10-28 15:34:15           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:34:15 # datetime     elapsed step    incb	expr	apop	dead	tvas	ttis	chem	virs	<%active  lbln>
+2020-10-28 15:34:15 [201028153415  0.00s]: 0       0	0	0	0	0	0	0.00e+00	0.00e+002020-10-28 15:34:15 	< 0.800 1.000 >
+2020-10-28 15:34:15  ---  main.cpp:generate tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:34:15  ---  main.cpp:update circulating tcells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:34:15  ---  main.cpp:update tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:34:15  ---  main.cpp:update epicells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:34:15  ---  main.cpp:update concentrations took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:34:15  ---  main.cpp:compute updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:34:15  ---  main.cpp:dispatch updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:34:15  ---  main.cpp:add new actives took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:34:15  ---  main.cpp:erase inactive took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:34:15  ---  main.cpp:sample took  avg 0.02 s max 0.02 s balance 1.00  --- 
+2020-10-28 15:34:15  ---  main.cpp:log took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:34:15 Finished 1 time steps in 0.0264 s (0.0264 s per step)
+2020-10-28 15:34:15  --- Elapsed time for main.cpp:run_sim:  (exiting barrier) 2020-10-28 15:34:15 ...
+2020-10-28 15:34:15           ... (min/my/avg/max, bal) (0.03/0.03/0.03/0.03 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:34:16 Peak memory used across all nodes: 2.27MB
+2020-10-28 15:34:16 Finished in 0.56 s at 10/28/20 15:34:16 for SimCov version 0.1.1.aeb67cc-dirty
+
+
+==========  RESTART  ==================
+
+2020-10-28 15:37:15 SimCov version SimCov version 0.1.1.aeb67cc-dirty-fixed_blocks_with_lung_model built on 20201028_153654
+2020-10-28 15:37:15 _________________________
+2020-10-28 15:37:15 Compiler definitions:
+2020-10-28 15:37:15   _XOPEN_SOURCE=700
+2020-10-28 15:37:15   CONFIG_USE_COLORS
+2020-10-28 15:37:15   USE_BYTELL
+2020-10-28 15:37:15   MAX_VIRIONS=125000
+2020-10-28 15:37:15 _________________________
+2020-10-28 15:37:15 Options:
+2020-10-28 15:37:15   dim =                         5 5 5
+2020-10-28 15:37:15   timesteps =                   1
+2020-10-28 15:37:15   infections =                  1
+2020-10-28 15:37:15   infection-coords =            -1 -1 -1
+2020-10-28 15:37:15   initial-infection =           1000
+2020-10-28 15:37:15   infectable-spacing =          1
+2020-10-28 15:37:15   incubation-period =           100
+2020-10-28 15:37:15   apoptosis-period =            30
+2020-10-28 15:37:15   expressing-period =           100
+2020-10-28 15:37:15   infectivity =                 0.0001
+2020-10-28 15:37:15   virion-production =           100
+2020-10-28 15:37:15   virion-decay =                0.1
+2020-10-28 15:37:15   virion-diffusion =            0.5
+2020-10-28 15:37:15   chemokine-production =        0.5
+2020-10-28 15:37:15   chemokine-decay =             0.01
+2020-10-28 15:37:15   chemokine-diffusion =         0.2
+2020-10-28 15:37:15   min-chemokine =               0.001
+2020-10-28 15:37:15   antibody-factor =             1
+2020-10-28 15:37:15   antibody-period =             900
+2020-10-28 15:37:15   tcell-generation-rate =       5
+2020-10-28 15:37:15   tcell-initial-delay =         1000
+2020-10-28 15:37:15   tcell-vascular-period =       600
+2020-10-28 15:37:15   tcell-tissue-period =         60
+2020-10-28 15:37:15   tcell-binding-period =        5
+2020-10-28 15:37:15   max-binding-prob =            0.1
+2020-10-28 15:37:15   lung-model-dir =              /mnt/c/Users/3n571w2/Downloads/simcov/data/
+2020-10-28 15:37:15   lung-model-type =             algorithmic
+2020-10-28 15:37:15   seed =                        697093668
+2020-10-28 15:37:15   sample-period =               1
+2020-10-28 15:37:16   sample-resolution =           1
+2020-10-28 15:37:16   min-blocks-per-proc =         16
+2020-10-28 15:37:16   output =                      results
+2020-10-28 15:37:16   progress =                    true
+2020-10-28 15:37:16   verbose =                     true
+2020-10-28 15:37:16 _________________________
+2020-10-28 15:37:16 Starting run with 1 processes on 1 node at 10/28/20 15:37:16
+2020-10-28 15:37:16 Pinned processes, with process 0 (pid 16045) pinned to core 0
+2020-10-28 15:37:16 Initial free memory across all nodes: 8.51GB
+2020-10-28 15:37:16 Starting with 8.51GB free on node 0
+2020-10-28 15:37:16 [0] <tissue.cpp:410> WARNING: Using a block size of 1: this will result in a lot of communication. You should change the dimensions.
+2020-10-28 15:37:16 Dividing 125 grid points into 125 blocks of size 1 (1^3), with 125 per process
+2020-10-28 15:37:16 Total initial memory required per process is a max of 11.72KB
+2020-10-28 15:37:16  --- Elapsed time for tissue.cpp:construct:  (exiting barrier) 2020-10-28 15:37:16 ...
+2020-10-28 15:37:16           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:37:16           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:37:16 * Setting initial infections... 
+2020-10-28 15:37:16   min 0.00 Average 0.00 max 0.00 (balance 1.00)
+2020-10-28 15:37:16  --- Elapsed time for main.cpp:initial_infection:  (exiting barrier) 2020-10-28 15:37:16 ...
+2020-10-28 15:37:16           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:37:16 Memory used on node 0 after initialization is  380.00KB
+2020-10-28 15:37:16           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:37:16 # datetime     elapsed step    incb	expr	apop	dead	tvas	ttis	chem	virs	<%active  lbln>
+2020-10-28 15:37:16 [201028153716  0.00s]: 0       0	0	0	0	0	0	0.00e+00	0.00e+002020-10-28 15:37:16 	< 0.800 1.000 >
+2020-10-28 15:37:16  ---  main.cpp:generate tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:37:16  ---  main.cpp:update circulating tcells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:37:16  ---  main.cpp:update tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:37:16  ---  main.cpp:update epicells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:37:16  ---  main.cpp:update concentrations took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:37:16  ---  main.cpp:compute updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:37:16  ---  main.cpp:dispatch updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:37:16  ---  main.cpp:add new actives took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:37:16  ---  main.cpp:erase inactive took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:37:16  ---  main.cpp:sample took  avg 0.01 s max 0.01 s balance 1.00  --- 
+2020-10-28 15:37:16  ---  main.cpp:log took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:37:16 Finished 1 time steps in 0.0275 s (0.0275 s per step)
+2020-10-28 15:37:16  --- Elapsed time for main.cpp:run_sim:  (exiting barrier) 2020-10-28 15:37:16 ...
+2020-10-28 15:37:16           ... (min/my/avg/max, bal) (0.03/0.03/0.03/0.03 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:37:16 Peak memory used across all nodes: 1.03MB
+2020-10-28 15:37:16 Finished in 0.62 s at 10/28/20 15:37:16 for SimCov version 0.1.1.aeb67cc-dirty
+
+
+==========  RESTART  ==================
+
+2020-10-28 15:43:07 SimCov version SimCov version 0.1.1.aeb67cc-dirty-fixed_blocks_with_lung_model built on 20201028_153654
+2020-10-28 15:43:07 _________________________
+2020-10-28 15:43:07 Compiler definitions:
+2020-10-28 15:43:07   _XOPEN_SOURCE=700
+2020-10-28 15:43:07   CONFIG_USE_COLORS
+2020-10-28 15:43:07   USE_BYTELL
+2020-10-28 15:43:07   MAX_VIRIONS=125000
+2020-10-28 15:43:07 _________________________
+2020-10-28 15:43:07 Options:
+2020-10-28 15:43:07   dim =                         5 5 5
+2020-10-28 15:43:07   timesteps =                   1
+2020-10-28 15:43:07   infections =                  1
+2020-10-28 15:43:07   infection-coords =            -1 -1 -1
+2020-10-28 15:43:07   initial-infection =           1000
+2020-10-28 15:43:07   infectable-spacing =          1
+2020-10-28 15:43:07   incubation-period =           100
+2020-10-28 15:43:07   apoptosis-period =            30
+2020-10-28 15:43:07   expressing-period =           100
+2020-10-28 15:43:07   infectivity =                 0.0001
+2020-10-28 15:43:07   virion-production =           100
+2020-10-28 15:43:07   virion-decay =                0.1
+2020-10-28 15:43:07   virion-diffusion =            0.5
+2020-10-28 15:43:07   chemokine-production =        0.5
+2020-10-28 15:43:07   chemokine-decay =             0.01
+2020-10-28 15:43:07   chemokine-diffusion =         0.2
+2020-10-28 15:43:07   min-chemokine =               0.001
+2020-10-28 15:43:07   antibody-factor =             1
+2020-10-28 15:43:07   antibody-period =             900
+2020-10-28 15:43:07   tcell-generation-rate =       5
+2020-10-28 15:43:07   tcell-initial-delay =         1000
+2020-10-28 15:43:07   tcell-vascular-period =       600
+2020-10-28 15:43:07   tcell-tissue-period =         60
+2020-10-28 15:43:07   tcell-binding-period =        5
+2020-10-28 15:43:07   max-binding-prob =            0.1
+2020-10-28 15:43:07   lung-model-dir =              /mnt/c/Users/3n571w2/Downloads/simcov/data/
+2020-10-28 15:43:07   lung-model-type =             algorithmic
+2020-10-28 15:43:07   seed =                        3887553392
+2020-10-28 15:43:07   sample-period =               1
+2020-10-28 15:43:07   sample-resolution =           1
+2020-10-28 15:43:07   min-blocks-per-proc =         16
+2020-10-28 15:43:07   output =                      results
+2020-10-28 15:43:07   progress =                    true
+2020-10-28 15:43:07   verbose =                     true
+2020-10-28 15:43:07 _________________________
+2020-10-28 15:43:07 Starting run with 1 processes on 1 node at 10/28/20 15:43:07
+2020-10-28 15:43:07 Pinned processes, with process 0 (pid 16047) pinned to core 0
+2020-10-28 15:43:07 Initial free memory across all nodes: 8.49GB
+2020-10-28 15:43:07 Starting with 8.49GB free on node 0
+2020-10-28 15:43:07 [0] <tissue.cpp:410> WARNING: Using a block size of 1: this will result in a lot of communication. You should change the dimensions.
+2020-10-28 15:43:07 Dividing 125 grid points into 125 blocks of size 1 (1^3), with 125 per process
+2020-10-28 15:43:07 Total initial memory required per process is a max of 11.72KB
+2020-10-28 15:43:07  --- Elapsed time for tissue.cpp:construct:  (exiting barrier) 2020-10-28 15:43:07 ...
+2020-10-28 15:43:07           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:43:07           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:43:07 * Setting initial infections... 
+2020-10-28 15:43:07   min 0.00 Average 0.00 max 0.00 (balance 1.00)
+2020-10-28 15:43:07  --- Elapsed time for main.cpp:initial_infection:  (exiting barrier) 2020-10-28 15:43:07 ...
+2020-10-28 15:43:07           ... (min/my/avg/max, bal) (0.01/0.01/0.01/0.01 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:43:07 Memory used on node 0 after initialization is  2.54MB
+2020-10-28 15:43:07           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:43:07 # datetime     elapsed step    incb	expr	apop	dead	tvas	ttis	chem	virs	<%active  lbln>
+2020-10-28 15:43:07 [201028154307  0.00s]: 0       0	0	0	0	0	0	0.00e+00	0.00e+002020-10-28 15:43:07 	< 0.800 1.000 >
+2020-10-28 15:43:07  ---  main.cpp:generate tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:43:07  ---  main.cpp:update circulating tcells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:07  ---  main.cpp:update tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:43:07  ---  main.cpp:update epicells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:07  ---  main.cpp:update concentrations took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:07  ---  main.cpp:compute updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:07  ---  main.cpp:dispatch updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:07  ---  main.cpp:add new actives took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:07  ---  main.cpp:erase inactive took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:07  ---  main.cpp:sample took  avg 0.02 s max 0.02 s balance 1.00  --- 
+2020-10-28 15:43:07  ---  main.cpp:log took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:07 Finished 1 time steps in 0.0415 s (0.0415 s per step)
+2020-10-28 15:43:07  --- Elapsed time for main.cpp:run_sim:  (exiting barrier) 2020-10-28 15:43:07 ...
+2020-10-28 15:43:07           ... (min/my/avg/max, bal) (0.05/0.05/0.05/0.05 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:43:07 Peak memory used across all nodes: 3.51MB
+2020-10-28 15:43:07 Finished in 0.56 s at 10/28/20 15:43:07 for SimCov version 0.1.1.aeb67cc-dirty
+
+
+==========  RESTART  ==================
+
+2020-10-28 15:43:38 SimCov version SimCov version 0.1.1.aeb67cc-dirty-fixed_blocks_with_lung_model built on 20201028_154314
+2020-10-28 15:43:38 _________________________
+2020-10-28 15:43:38 Compiler definitions:
+2020-10-28 15:43:38   _XOPEN_SOURCE=700
+2020-10-28 15:43:38   CONFIG_USE_COLORS
+2020-10-28 15:43:38   USE_BYTELL
+2020-10-28 15:43:38   MAX_VIRIONS=125000
+2020-10-28 15:43:38 _________________________
+2020-10-28 15:43:38 Options:
+2020-10-28 15:43:38   dim =                         5 5 5
+2020-10-28 15:43:38   timesteps =                   1
+2020-10-28 15:43:38   infections =                  1
+2020-10-28 15:43:38   infection-coords =            -1 -1 -1
+2020-10-28 15:43:38   initial-infection =           1000
+2020-10-28 15:43:38   infectable-spacing =          1
+2020-10-28 15:43:38   incubation-period =           100
+2020-10-28 15:43:38   apoptosis-period =            30
+2020-10-28 15:43:38   expressing-period =           100
+2020-10-28 15:43:38   infectivity =                 0.0001
+2020-10-28 15:43:38   virion-production =           100
+2020-10-28 15:43:38   virion-decay =                0.1
+2020-10-28 15:43:38   virion-diffusion =            0.5
+2020-10-28 15:43:38   chemokine-production =        0.5
+2020-10-28 15:43:38   chemokine-decay =             0.01
+2020-10-28 15:43:38   chemokine-diffusion =         0.2
+2020-10-28 15:43:38   min-chemokine =               0.001
+2020-10-28 15:43:38   antibody-factor =             1
+2020-10-28 15:43:38   antibody-period =             900
+2020-10-28 15:43:38   tcell-generation-rate =       5
+2020-10-28 15:43:38   tcell-initial-delay =         1000
+2020-10-28 15:43:38   tcell-vascular-period =       600
+2020-10-28 15:43:38   tcell-tissue-period =         60
+2020-10-28 15:43:38   tcell-binding-period =        5
+2020-10-28 15:43:38   max-binding-prob =            0.1
+2020-10-28 15:43:38   lung-model-dir =              /mnt/c/Users/3n571w2/Downloads/simcov/data/
+2020-10-28 15:43:38   lung-model-type =             algorithmic
+2020-10-28 15:43:38   seed =                        950349024
+2020-10-28 15:43:38   sample-period =               1
+2020-10-28 15:43:38   sample-resolution =           1
+2020-10-28 15:43:38   min-blocks-per-proc =         16
+2020-10-28 15:43:38   output =                      results
+2020-10-28 15:43:38   progress =                    true
+2020-10-28 15:43:38   verbose =                     true
+2020-10-28 15:43:38 _________________________
+2020-10-28 15:43:38 Starting run with 1 processes on 1 node at 10/28/20 15:43:38
+2020-10-28 15:43:38 Pinned processes, with process 0 (pid 16656) pinned to core 0
+2020-10-28 15:43:38 Initial free memory across all nodes: 8.48GB
+2020-10-28 15:43:38 Starting with 8.48GB free on node 0
+2020-10-28 15:43:38 [0] <tissue.cpp:410> WARNING: Using a block size of 1: this will result in a lot of communication. You should change the dimensions.
+2020-10-28 15:43:38 Dividing 125 grid points into 125 blocks of size 1 (1^3), with 125 per process
+2020-10-28 15:43:38 Total initial memory required per process is a max of 11.72KB
+2020-10-28 15:43:38  --- Elapsed time for tissue.cpp:construct:  (exiting barrier) 2020-10-28 15:43:38 ...
+2020-10-28 15:43:38           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:43:38           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:43:38 * Setting initial infections... 
+2020-10-28 15:43:38   min 0.00 Average 0.00 max 0.00 (balance 1.00)
+2020-10-28 15:43:38  --- Elapsed time for main.cpp:initial_infection:  (exiting barrier) 2020-10-28 15:43:38 ...
+2020-10-28 15:43:38           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:43:38 Memory used on node 0 after initialization is  104.00KB
+2020-10-28 15:43:38           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:43:38 # datetime     elapsed step    incb	expr	apop	dead	tvas	ttis	chem	virs	<%active  lbln>
+2020-10-28 15:43:38 [201028154338  0.00s]: 0       0	0	0	0	0	0	0.00e+00	0.00e+002020-10-28 15:43:38 	< 0.800 1.000 >
+2020-10-28 15:43:38  ---  main.cpp:generate tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:43:38  ---  main.cpp:update circulating tcells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:38  ---  main.cpp:update tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:43:38  ---  main.cpp:update epicells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:38  ---  main.cpp:update concentrations took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:38  ---  main.cpp:compute updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:38  ---  main.cpp:dispatch updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:38  ---  main.cpp:add new actives took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:38  ---  main.cpp:erase inactive took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:38  ---  main.cpp:sample took  avg 0.02 s max 0.02 s balance 1.00  --- 
+2020-10-28 15:43:38  ---  main.cpp:log took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:43:38 Finished 1 time steps in 0.0304 s (0.0304 s per step)
+2020-10-28 15:43:38  --- Elapsed time for main.cpp:run_sim:  (exiting barrier) 2020-10-28 15:43:38 ...
+2020-10-28 15:43:38           ... (min/my/avg/max, bal) (0.03/0.03/0.03/0.03 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:43:38 Peak memory used across all nodes: 1.74MB
+2020-10-28 15:43:38 Finished in 0.58 s at 10/28/20 15:43:38 for SimCov version 0.1.1.aeb67cc-dirty
+
+
+==========  RESTART  ==================
+
+2020-10-28 15:48:35 SimCov version SimCov version 0.1.1.aeb67cc-dirty-fixed_blocks_with_lung_model built on 20201028_154438
+2020-10-28 15:48:35 _________________________
+2020-10-28 15:48:35 Compiler definitions:
+2020-10-28 15:48:35   _XOPEN_SOURCE=700
+2020-10-28 15:48:35   CONFIG_USE_COLORS
+2020-10-28 15:48:35   USE_BYTELL
+2020-10-28 15:48:35   MAX_VIRIONS=125000
+2020-10-28 15:48:35 _________________________
+2020-10-28 15:48:35 Options:
+2020-10-28 15:48:35   dim =                         5 5 5
+2020-10-28 15:48:35   timesteps =                   1
+2020-10-28 15:48:35   infections =                  1
+2020-10-28 15:48:35   infection-coords =            -1 -1 -1
+2020-10-28 15:48:35   initial-infection =           1000
+2020-10-28 15:48:35   infectable-spacing =          1
+2020-10-28 15:48:35   incubation-period =           100
+2020-10-28 15:48:35   apoptosis-period =            30
+2020-10-28 15:48:35   expressing-period =           100
+2020-10-28 15:48:35   infectivity =                 0.0001
+2020-10-28 15:48:35   virion-production =           100
+2020-10-28 15:48:35   virion-decay =                0.1
+2020-10-28 15:48:35   virion-diffusion =            0.5
+2020-10-28 15:48:35   chemokine-production =        0.5
+2020-10-28 15:48:35   chemokine-decay =             0.01
+2020-10-28 15:48:35   chemokine-diffusion =         0.2
+2020-10-28 15:48:35   min-chemokine =               0.001
+2020-10-28 15:48:35   antibody-factor =             1
+2020-10-28 15:48:35   antibody-period =             900
+2020-10-28 15:48:35   tcell-generation-rate =       5
+2020-10-28 15:48:35   tcell-initial-delay =         1000
+2020-10-28 15:48:35   tcell-vascular-period =       600
+2020-10-28 15:48:35   tcell-tissue-period =         60
+2020-10-28 15:48:35   tcell-binding-period =        5
+2020-10-28 15:48:35   max-binding-prob =            0.1
+2020-10-28 15:48:35   lung-model-dir =              /mnt/c/Users/3n571w2/Downloads/simcov/data/
+2020-10-28 15:48:35   lung-model-type =             algorithmic
+2020-10-28 15:48:35   seed =                        1829174500
+2020-10-28 15:48:35   sample-period =               1
+2020-10-28 15:48:35   sample-resolution =           1
+2020-10-28 15:48:35   min-blocks-per-proc =         16
+2020-10-28 15:48:35   output =                      results
+2020-10-28 15:48:35   progress =                    true
+2020-10-28 15:48:35   verbose =                     true
+2020-10-28 15:48:35 _________________________
+2020-10-28 15:48:35 Starting run with 1 processes on 1 node at 10/28/20 15:48:35
+2020-10-28 15:48:35 Pinned processes, with process 0 (pid 17265) pinned to core 0
+2020-10-28 15:48:35 Initial free memory across all nodes: 8.52GB
+2020-10-28 15:48:35 Starting with 8.52GB free on node 0
+2020-10-28 15:48:35 [0] <tissue.cpp:410> WARNING: Using a block size of 1: this will result in a lot of communication. You should change the dimensions.
+2020-10-28 15:48:35 Dividing 125 grid points into 125 blocks of size 1 (1^3), with 125 per process
+2020-10-28 15:48:35 Total initial memory required per process is a max of 11.72KB
+2020-10-28 15:48:35  --- Elapsed time for tissue.cpp:construct:  (exiting barrier) 2020-10-28 15:48:35 ...
+2020-10-28 15:48:35           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:48:35           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:48:35 * Setting initial infections... 
+2020-10-28 15:48:35   min 0.00 Average 0.00 max 0.00 (balance 1.00)
+2020-10-28 15:48:35  --- Elapsed time for main.cpp:initial_infection:  (exiting barrier) 2020-10-28 15:48:35 ...
+2020-10-28 15:48:35           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:48:35 Memory used on node 0 after initialization is  152.00KB
+2020-10-28 15:48:35           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:48:35 # datetime     elapsed step    incb	expr	apop	dead	tvas	ttis	chem	virs	<%active  lbln>
+2020-10-28 15:48:35 [201028154835  0.00s]: 0       0	0	0	0	0	0	0.00e+00	0.00e+002020-10-28 15:48:35 	< 0.800 1.000 >
+2020-10-28 15:48:35  ---  main.cpp:generate tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:48:35  ---  main.cpp:update circulating tcells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:48:35  ---  main.cpp:update tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:48:35  ---  main.cpp:update epicells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:48:35  ---  main.cpp:update concentrations took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:48:35  ---  main.cpp:compute updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:48:35  ---  main.cpp:dispatch updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:48:35  ---  main.cpp:add new actives took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:48:35  ---  main.cpp:erase inactive took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:48:35  ---  main.cpp:sample took  avg 0.03 s max 0.03 s balance 1.00  --- 
+2020-10-28 15:48:35  ---  main.cpp:log took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:48:35 Finished 1 time steps in 0.0469 s (0.0469 s per step)
+2020-10-28 15:48:35  --- Elapsed time for main.cpp:run_sim:  (exiting barrier) 2020-10-28 15:48:35 ...
+2020-10-28 15:48:35           ... (min/my/avg/max, bal) (0.05/0.05/0.05/0.05 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:48:36 Peak memory used across all nodes: 1.23MB
+2020-10-28 15:48:36 Finished in 0.56 s at 10/28/20 15:48:36 for SimCov version 0.1.1.aeb67cc-dirty
+
+
+==========  RESTART  ==================
+
+2020-10-28 15:59:19 SimCov version SimCov version 0.1.1.aeb67cc-dirty-fixed_blocks_with_lung_model built on 20201028_155122
+2020-10-28 15:59:19 _________________________
+2020-10-28 15:59:19 Compiler definitions:
+2020-10-28 15:59:19   _XOPEN_SOURCE=700
+2020-10-28 15:59:19   CONFIG_USE_COLORS
+2020-10-28 15:59:19   USE_BYTELL
+2020-10-28 15:59:19   MAX_VIRIONS=125000
+2020-10-28 15:59:19 _________________________
+2020-10-28 15:59:19 Options:
+2020-10-28 15:59:19   dim =                         5 5 5
+2020-10-28 15:59:19   timesteps =                   1
+2020-10-28 15:59:19   infections =                  1
+2020-10-28 15:59:19   infection-coords =            -1 -1 -1
+2020-10-28 15:59:19   initial-infection =           1000
+2020-10-28 15:59:19   infectable-spacing =          1
+2020-10-28 15:59:19   incubation-period =           100
+2020-10-28 15:59:19   apoptosis-period =            30
+2020-10-28 15:59:19   expressing-period =           100
+2020-10-28 15:59:19   infectivity =                 0.0001
+2020-10-28 15:59:19   virion-production =           100
+2020-10-28 15:59:19   virion-decay =                0.1
+2020-10-28 15:59:19   virion-diffusion =            0.5
+2020-10-28 15:59:19   chemokine-production =        0.5
+2020-10-28 15:59:19   chemokine-decay =             0.01
+2020-10-28 15:59:19   chemokine-diffusion =         0.2
+2020-10-28 15:59:19   min-chemokine =               0.001
+2020-10-28 15:59:19   antibody-factor =             1
+2020-10-28 15:59:19   antibody-period =             900
+2020-10-28 15:59:19   tcell-generation-rate =       5
+2020-10-28 15:59:19   tcell-initial-delay =         1000
+2020-10-28 15:59:19   tcell-vascular-period =       600
+2020-10-28 15:59:19   tcell-tissue-period =         60
+2020-10-28 15:59:19   tcell-binding-period =        5
+2020-10-28 15:59:19   max-binding-prob =            0.1
+2020-10-28 15:59:19   lung-model-dir =              /mnt/c/Users/3n571w2/Downloads/simcov/data/
+2020-10-28 15:59:19   lung-model-type =             algorithmic
+2020-10-28 15:59:19   seed =                        1429727600
+2020-10-28 15:59:19   sample-period =               1
+2020-10-28 15:59:19   sample-resolution =           1
+2020-10-28 15:59:19   min-blocks-per-proc =         16
+2020-10-28 15:59:19   output =                      results
+2020-10-28 15:59:19   progress =                    true
+2020-10-28 15:59:19   verbose =                     true
+2020-10-28 15:59:19 _________________________
+2020-10-28 15:59:19 Starting run with 1 processes on 1 node at 10/28/20 15:59:19
+2020-10-28 15:59:19 Pinned processes, with process 0 (pid 17874) pinned to core 0
+2020-10-28 15:59:19 Initial free memory across all nodes: 9.53GB
+2020-10-28 15:59:19 Starting with 9.53GB free on node 0
+2020-10-28 15:59:19 [0] <tissue.cpp:410> WARNING: Using a block size of 1: this will result in a lot of communication. You should change the dimensions.
+2020-10-28 15:59:19 Dividing 125 grid points into 125 blocks of size 1 (1^3), with 125 per process
+2020-10-28 15:59:19 Total initial memory required per process is a max of 11.72KB
+2020-10-28 15:59:19  --- Elapsed time for tissue.cpp:construct:  (exiting barrier) 2020-10-28 15:59:19 ...
+2020-10-28 15:59:19           ... (min/my/avg/max, bal) (0.01/0.01/0.01/0.01 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:59:19           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:59:19 * Setting initial infections... 
+2020-10-28 15:59:19   min 0.00 Average 0.00 max 0.00 (balance 1.00)
+2020-10-28 15:59:19  --- Elapsed time for main.cpp:initial_infection:  (exiting barrier) 2020-10-28 15:59:19 ...
+2020-10-28 15:59:19           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:59:19 Memory used on node 0 after initialization is  696.00KB
+2020-10-28 15:59:19           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 15:59:19 # datetime     elapsed step    incb	expr	apop	dead	tvas	ttis	chem	virs	<%active  lbln>
+2020-10-28 15:59:19 [201028155919  0.00s]: 0       0	0	0	0	0	0	0.00e+00	0.00e+002020-10-28 15:59:19 	< 0.800 1.000 >
+2020-10-28 15:59:19  ---  main.cpp:generate tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:59:19  ---  main.cpp:update circulating tcells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:59:19  ---  main.cpp:update tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:59:19  ---  main.cpp:update epicells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 15:59:19  ---  main.cpp:update concentrations took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:59:19  ---  main.cpp:compute updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:59:19  ---  main.cpp:dispatch updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:59:19  ---  main.cpp:add new actives took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:59:19  ---  main.cpp:erase inactive took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:59:19  ---  main.cpp:sample took  avg 0.02 s max 0.02 s balance 1.00  --- 
+2020-10-28 15:59:19  ---  main.cpp:log took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 15:59:19 Finished 1 time steps in 0.0237 s (0.0237 s per step)
+2020-10-28 15:59:19  --- Elapsed time for main.cpp:run_sim:  (exiting barrier) 2020-10-28 15:59:19 ...
+2020-10-28 15:59:19           ... (min/my/avg/max, bal) (0.02/0.02/0.02/0.02 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 15:59:20 Peak memory used across all nodes: 1.91MB
+2020-10-28 15:59:20 Finished in 0.56 s at 10/28/20 15:59:20 for SimCov version 0.1.1.aeb67cc-dirty
+
+
+==========  RESTART  ==================
+
+2020-10-28 16:02:57 SimCov version SimCov version 0.1.1.aeb67cc-dirty-fixed_blocks_with_lung_model built on 20201028_160233
+2020-10-28 16:02:57 _________________________
+2020-10-28 16:02:57 Compiler definitions:
+2020-10-28 16:02:57   _XOPEN_SOURCE=700
+2020-10-28 16:02:57   CONFIG_USE_COLORS
+2020-10-28 16:02:57   USE_BYTELL
+2020-10-28 16:02:57   MAX_VIRIONS=125000
+2020-10-28 16:02:57 _________________________
+2020-10-28 16:02:57 Options:
+2020-10-28 16:02:57   dim =                         5 5 5
+2020-10-28 16:02:57   timesteps =                   1
+2020-10-28 16:02:57   infections =                  1
+2020-10-28 16:02:57   infection-coords =            -1 -1 -1
+2020-10-28 16:02:57   initial-infection =           1000
+2020-10-28 16:02:57   infectable-spacing =          1
+2020-10-28 16:02:57   incubation-period =           100
+2020-10-28 16:02:57   apoptosis-period =            30
+2020-10-28 16:02:57   expressing-period =           100
+2020-10-28 16:02:57   infectivity =                 0.0001
+2020-10-28 16:02:57   virion-production =           100
+2020-10-28 16:02:57   virion-decay =                0.1
+2020-10-28 16:02:57   virion-diffusion =            0.5
+2020-10-28 16:02:57   chemokine-production =        0.5
+2020-10-28 16:02:57   chemokine-decay =             0.01
+2020-10-28 16:02:57   chemokine-diffusion =         0.2
+2020-10-28 16:02:57   min-chemokine =               0.001
+2020-10-28 16:02:57   antibody-factor =             1
+2020-10-28 16:02:57   antibody-period =             900
+2020-10-28 16:02:57   tcell-generation-rate =       5
+2020-10-28 16:02:57   tcell-initial-delay =         1000
+2020-10-28 16:02:57   tcell-vascular-period =       600
+2020-10-28 16:02:57   tcell-tissue-period =         60
+2020-10-28 16:02:57   tcell-binding-period =        5
+2020-10-28 16:02:57   max-binding-prob =            0.1
+2020-10-28 16:02:57   lung-model-dir =              /mnt/c/Users/3n571w2/Downloads/simcov/data/
+2020-10-28 16:02:57   lung-model-type =             algorithmic
+2020-10-28 16:02:57   seed =                        577693504
+2020-10-28 16:02:57   sample-period =               1
+2020-10-28 16:02:57   sample-resolution =           1
+2020-10-28 16:02:57   min-blocks-per-proc =         16
+2020-10-28 16:02:57   output =                      results
+2020-10-28 16:02:57   progress =                    true
+2020-10-28 16:02:57   verbose =                     true
+2020-10-28 16:02:57 _________________________
+2020-10-28 16:02:57 Starting run with 1 processes on 1 node at 10/28/20 16:02:57
+2020-10-28 16:02:57 Pinned processes, with process 0 (pid 18483) pinned to core 0
+2020-10-28 16:02:57 Initial free memory across all nodes: 9.48GB
+2020-10-28 16:02:57 Starting with 9.48GB free on node 0
+2020-10-28 16:02:57 [0] <tissue.cpp:410> WARNING: Using a block size of 1: this will result in a lot of communication. You should change the dimensions.
+2020-10-28 16:02:57 Dividing 125 grid points into 125 blocks of size 1 (1^3), with 125 per process
+2020-10-28 16:02:57 Total initial memory required per process is a max of 11.72KB
+2020-10-28 16:02:57  --- Elapsed time for tissue.cpp:construct:  (exiting barrier) 2020-10-28 16:02:57 ...
+2020-10-28 16:02:57           ... (min/my/avg/max, bal) (0.01/0.01/0.01/0.01 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 16:02:57           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 16:02:57 * Setting initial infections... 
+2020-10-28 16:02:57   min 0.00 Average 0.00 max 0.00 (balance 1.00)
+2020-10-28 16:02:57  --- Elapsed time for main.cpp:initial_infection:  (exiting barrier) 2020-10-28 16:02:57 ...
+2020-10-28 16:02:57           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 16:02:57 Memory used on node 0 after initialization is  384.00KB
+2020-10-28 16:02:57           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 16:02:57 # datetime     elapsed step    incb	expr	apop	dead	tvas	ttis	chem	virs	<%active  lbln>
+2020-10-28 16:02:57 [201028160257  0.00s]: 0       0	0	0	0	0	0	0.00e+00	0.00e+002020-10-28 16:02:57 	< 0.800 1.000 >
+2020-10-28 16:02:58  ---  main.cpp:generate tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 16:02:58  ---  main.cpp:update circulating tcells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:02:58  ---  main.cpp:update tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 16:02:58  ---  main.cpp:update epicells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 16:02:58  ---  main.cpp:update concentrations took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:02:58  ---  main.cpp:compute updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:02:58  ---  main.cpp:dispatch updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:02:58  ---  main.cpp:add new actives took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:02:58  ---  main.cpp:erase inactive took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:02:58  ---  main.cpp:sample took  avg 0.03 s max 0.03 s balance 1.00  --- 
+2020-10-28 16:02:58  ---  main.cpp:log took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:02:58 Finished 1 time steps in 0.0433 s (0.0433 s per step)
+2020-10-28 16:02:58  --- Elapsed time for main.cpp:run_sim:  (exiting barrier) 2020-10-28 16:02:58 ...
+2020-10-28 16:02:58           ... (min/my/avg/max, bal) (0.04/0.04/0.04/0.04 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 16:02:58 Peak memory used across all nodes: 1004.00KB
+2020-10-28 16:02:58 Finished in 0.61 s at 10/28/20 16:02:58 for SimCov version 0.1.1.aeb67cc-dirty
+
+
+==========  RESTART  ==================
+
+2020-10-28 16:05:09 SimCov version SimCov version 0.1.1.aeb67cc-dirty-fixed_blocks_with_lung_model built on 20201028_160445
+2020-10-28 16:05:09 _________________________
+2020-10-28 16:05:09 Compiler definitions:
+2020-10-28 16:05:09   _XOPEN_SOURCE=700
+2020-10-28 16:05:09   CONFIG_USE_COLORS
+2020-10-28 16:05:09   USE_BYTELL
+2020-10-28 16:05:09   MAX_VIRIONS=125000
+2020-10-28 16:05:09 _________________________
+2020-10-28 16:05:09 Options:
+2020-10-28 16:05:09   dim =                         5 5 5
+2020-10-28 16:05:09   timesteps =                   1
+2020-10-28 16:05:09   infections =                  1
+2020-10-28 16:05:09   infection-coords =            -1 -1 -1
+2020-10-28 16:05:09   initial-infection =           1000
+2020-10-28 16:05:09   infectable-spacing =          1
+2020-10-28 16:05:09   incubation-period =           100
+2020-10-28 16:05:09   apoptosis-period =            30
+2020-10-28 16:05:09   expressing-period =           100
+2020-10-28 16:05:09   infectivity =                 0.0001
+2020-10-28 16:05:09   virion-production =           100
+2020-10-28 16:05:09   virion-decay =                0.1
+2020-10-28 16:05:09   virion-diffusion =            0.5
+2020-10-28 16:05:09   chemokine-production =        0.5
+2020-10-28 16:05:09   chemokine-decay =             0.01
+2020-10-28 16:05:09   chemokine-diffusion =         0.2
+2020-10-28 16:05:09   min-chemokine =               0.001
+2020-10-28 16:05:09   antibody-factor =             1
+2020-10-28 16:05:09   antibody-period =             900
+2020-10-28 16:05:09   tcell-generation-rate =       5
+2020-10-28 16:05:09   tcell-initial-delay =         1000
+2020-10-28 16:05:09   tcell-vascular-period =       600
+2020-10-28 16:05:09   tcell-tissue-period =         60
+2020-10-28 16:05:09   tcell-binding-period =        5
+2020-10-28 16:05:09   max-binding-prob =            0.1
+2020-10-28 16:05:09   lung-model-dir =              /mnt/c/Users/3n571w2/Downloads/simcov/data/
+2020-10-28 16:05:09   lung-model-type =             algorithmic
+2020-10-28 16:05:09   seed =                        3788158024
+2020-10-28 16:05:09   sample-period =               1
+2020-10-28 16:05:09   sample-resolution =           1
+2020-10-28 16:05:09   min-blocks-per-proc =         16
+2020-10-28 16:05:09   output =                      results
+2020-10-28 16:05:09   progress =                    true
+2020-10-28 16:05:09   verbose =                     true
+2020-10-28 16:05:09 _________________________
+2020-10-28 16:05:09 Starting run with 1 processes on 1 node at 10/28/20 16:05:09
+2020-10-28 16:05:09 Pinned processes, with process 0 (pid 19092) pinned to core 0
+2020-10-28 16:05:09 Initial free memory across all nodes: 9.46GB
+2020-10-28 16:05:09 Starting with 9.46GB free on node 0
+2020-10-28 16:05:09 [0] <tissue.cpp:410> WARNING: Using a block size of 1: this will result in a lot of communication. You should change the dimensions.
+2020-10-28 16:05:09 Dividing 125 grid points into 125 blocks of size 1 (1^3), with 125 per process
+2020-10-28 16:05:09 Total initial memory required per process is a max of 11.72KB
+2020-10-28 16:05:09  --- Elapsed time for tissue.cpp:construct:  (exiting barrier) 2020-10-28 16:05:09 ...
+2020-10-28 16:05:09           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 16:05:09           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 16:05:09 * Setting initial infections... 
+2020-10-28 16:05:09   min 0.00 Average 0.00 max 0.00 (balance 1.00)
+2020-10-28 16:05:09  --- Elapsed time for main.cpp:initial_infection:  (exiting barrier) 2020-10-28 16:05:09 ...
+2020-10-28 16:05:09           ... (min/my/avg/max, bal) (0.00/0.00/0.00/0.00 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 16:05:09 Memory used on node 0 after initialization is  412.00KB
+2020-10-28 16:05:09           ... (min/my/avg/max, bal) No-Time barrier(0.00 s) --- 
+2020-10-28 16:05:09 # datetime     elapsed step    incb	expr	apop	dead	tvas	ttis	chem	virs	<%active  lbln>
+2020-10-28 16:05:09 [201028160509  0.00s]: 0       0	0	0	0	0	0	0.00e+00	0.00e+002020-10-28 16:05:09 	< 0.800 1.000 >
+2020-10-28 16:05:09  ---  main.cpp:generate tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 16:05:09  ---  main.cpp:update circulating tcells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:05:09  ---  main.cpp:update tcells took  avg 0.00 s max 0.00 s balance -nan  --- 
+2020-10-28 16:05:09  ---  main.cpp:update epicells took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:05:09  ---  main.cpp:update concentrations took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:05:09  ---  main.cpp:compute updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:05:09  ---  main.cpp:dispatch updates took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:05:09  ---  main.cpp:add new actives took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:05:09  ---  main.cpp:erase inactive took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:05:09  ---  main.cpp:sample took  avg 0.01 s max 0.01 s balance 1.00  --- 
+2020-10-28 16:05:09  ---  main.cpp:log took  avg 0.00 s max 0.00 s balance 1.00  --- 
+2020-10-28 16:05:09 Finished 1 time steps in 0.0282 s (0.0282 s per step)
+2020-10-28 16:05:09  --- Elapsed time for main.cpp:run_sim:  (exiting barrier) 2020-10-28 16:05:09 ...
+2020-10-28 16:05:09           ... (min/my/avg/max, bal) (0.03/0.03/0.03/0.03 s, 1.00) barrier(0.00 s) --- 
+2020-10-28 16:05:10 Peak memory used across all nodes: 0B
+2020-10-28 16:05:10 Finished in 0.58 s at 10/28/20 16:05:10 for SimCov version 0.1.1.aeb67cc-dirty

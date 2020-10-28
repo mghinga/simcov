@@ -442,7 +442,7 @@ void sample(int time_step, vector<SampleData> &samples, int64_t start_id, ViewOb
              // visualization points, and our visualization entities are cells
              << "DIMENSIONS " << (x_dim + 1) << " " << (y_dim + 1) << " " << (z_dim + 1) << "\n"
              // each cell is 5 microns
-             << "SPACING 5 5 5\n"
+             << "SPACING 1 1 1\n"
              << "ORIGIN 0 0 0\n"
              << "CELL_DATA " << (x_dim * y_dim * z_dim) << "\n"
              << "SCALARS ";

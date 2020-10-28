@@ -294,9 +294,10 @@ class Options {
     upcxx::barrier();
 
     if (!*output_dir_opt) {
-      output_dir = "simcov-run-n" + to_string(upcxx::rank_n()) + "-N" +
-                   to_string(upcxx::rank_n() / upcxx::local_team().rank_n()) + "-" +
-                   get_current_time(true);
+      // output_dir = "simcov-run-n" + to_string(upcxx::rank_n()) + "-N" +
+      //              to_string(upcxx::rank_n() / upcxx::local_team().rank_n()) + "-" +
+      //              get_current_time(true);
+      output_dir = "results";
       output_dir_opt->default_val(output_dir);
     }
 
