@@ -7,9 +7,42 @@
 
 #include "upcxx_utils.hpp"
 #include "options.hpp"
-#include "alveolar.hpp"
 
 extern shared_ptr<Options> _options;
+
+struct Int3D {
+
+  int64_t x, y, z;
+
+  Int3D() : x(0), y(0), z(0) {}
+
+  Int3D(int64_t x, int64_t y, int64_t z) : x(x), y(y), z(z) {}
+
+  Int3D & operator=(const Int3D &val) {
+    x = val.x;
+    y = val.y;
+    z = val.z;
+    return *this;
+  }
+
+};
+
+struct Double3D {
+
+  double x, y, z;
+
+  Double3D() : x(0.0), y(0.0), z(0.0) {}
+
+  Double3D(double x, double y, double z) : x(x), y(y), z(z) {}
+
+  Double3D & operator=(const Double3D &val) {
+    x = val.x;
+    y = val.y;
+    z = val.z;
+    return *this;
+  }
+
+};
 
 struct Level {
 
@@ -36,13 +69,15 @@ class Lung {
       Int3D child = constructSegment({gridSize.x / 2 - lvl.d, gridSize.y / 2, 0}, lvl);
       // Recursively build tree
       construct(child, 1, lvl.bAngle);
-      // Build alveolus structures
-      Alveolar av;
-      for (Int3D leaf : leafs) {
-        av.construct(leaf);
-        std::set<int64_t> e = getEpiCellIds();
-        epiCellPositions1D.insert(e.begin(), e.end());
-      }
+      // // Build alveolus structures
+      // Int3D rt(2, 2, 0);
+      // constructAlveoli(rt);
+      // // Alveolar av;
+      // // for (Int3D leaf : leafs) {
+      // //   av.construct(leaf);
+      // //   std::set<int64_t> e = getEpiCellIds();
+      // //   epiCellPositions1D.insert(e.begin(), e.end());
+      // // }
     } else if (_options->lung_model_type == "empirical") {
       // empirical
       loadEmpiricalData();
@@ -210,12 +245,45 @@ class Lung {
        }
    }
 
+   void constructAlveoli(const Int3D & pos) {
+     // Cube dimensions for dim = 5 epi cells across are x,y,z = [-2 2]
+     int dim = 5, idim = 2;
+     for (int x = -idim; x <= idim; x++) {
+       for (int y = -idim; y <= idim; y++) {
+         for (int z = 0; z < dim; z++) {
+           // Cells in the two x planes
+           if (x == -idim || x == idim) {
+             addPosition(x, y, z, pos);
+           }
+           // Cells in the two y planes
+           if (y == -idim || y == idim) {
+             addPosition(x, y, z, pos);
+           }
+           // Cells in the one z plane at bottom of alveoli
+           if (z == dim - 1) {
+             addPosition(x, y, z, pos);
+           }
+         }
+       }
+     }
+     // TODO rotate
+   }
+
+   void addPosition(int x, int y, int z, const Int3D & pos) {
+     epiCellPositions3D.push_back({.x = x + pos.x,
+       .y = y + pos.y,
+       .z = z + pos.z});
+     epiCellPositions1D.insert((x + pos.x)
+      + (y + pos.y) * gridSize.x
+      + (z + pos.z) * gridSize.x * gridSize.y);
+   }
+
    void loadEstimatedParameters() {
      // Yeh et al 1980
      std::ifstream file;
      file.open(_options->lung_model_dir + "/table.txt");
      std::string line;
-     double m = 10; // Convert cm to mm
+     double m = 1 / 5e-3; // Convert cm to um
      if (file.is_open()) {
        while (std::getline(file, line)) {
          std::stringstream lstream(line);
