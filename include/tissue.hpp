@@ -98,7 +98,7 @@ struct TCell {
   TCell() {}
 };
 
-enum class EpiCellStatus { HEALTHY, INCUBATING, EXPRESSING, APOPTOTIC, DEAD };
+enum class EpiCellStatus { HEALTHY, INCUBATING, EXPRESSING, APOPTOTIC, DEAD, ALVEOLI };
 const string EpiCellStatusStr[] = {"HEALTHY", "INCUBATING", "EXPRESSING", "APOPTOTIC", "DEAD" };
 
 class EpiCell {
@@ -181,7 +181,8 @@ class Tissue {
   ~Tissue() {}
 
   void construct(GridCoords grid_size,
-    const std::set<int64_t> & epiCellIds);
+    const std::set<int64_t> & airwayEpiCellIds,
+    const std::set<int64_t> & alveoliEpiCellIds);
 
   int64_t get_num_local_grid_points();
 

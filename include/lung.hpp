@@ -61,25 +61,23 @@ class Lung {
     gridSize.x = _options->dimensions[0];
     gridSize.y = _options->dimensions[1];
     gridSize.z = _options->dimensions[2];
-    if (_options->lung_model_type == "algorithmic") {
-      // algorithmic
+    if (_options->lung_model_type == "algorithmic") { // Algorithmic
       loadEstimatedParameters();
       // Draw root
       Level lvl = levels.at(0);
-      Int3D child = constructSegment({gridSize.x / 2 - lvl.d, gridSize.y / 2, 0}, lvl);
+      Int3D child = constructSegment({gridSize.x / 2 + 3 * lvl.d, 0, 0}, lvl);
+      //TODO Int3D child = constructSegment({gridSize.x / 2 + 3 * lvl.d, gridSize.y / 2, 0}, lvl);
       // Recursively build tree
       construct(child, 1, lvl.bAngle);
-      // // Build alveolus structures
-      // Int3D rt(2, 2, 0);
-      // constructAlveoli(rt);
-      // // Alveolar av;
-      // // for (Int3D leaf : leafs) {
-      // //   av.construct(leaf);
-      // //   std::set<int64_t> e = getEpiCellIds();
-      // //   epiCellPositions1D.insert(e.begin(), e.end());
-      // // }
-    } else if (_options->lung_model_type == "empirical") {
-      // empirical
+      // Build alveolus structures
+      for (Int3D leaf : leafs) {
+        Int3D left(leaf.x + 2, leaf.y + 2, leaf.z);
+        constructAlveoli(left);
+        Int3D right(leaf.x + 7, leaf.y + 7, leaf.z);
+        constructAlveoli(right);
+      }
+      SLOG("Number of alveoli ", 2 * leafs.size(), "\n");
+    } else if (_options->lung_model_type == "empirical") { // Empirical
       loadEmpiricalData();
       // Draw all segments
       for (int i = 0; i < levels.size(); i++) {
@@ -89,6 +87,7 @@ class Lung {
         }
         constructSegment(levels.at(i));
       }
+      SLOG(skipped, " skipped airway segments\n");
     } else {
       SDIE("Invalid lung model type ", _options->lung_model_type,
            " should be 'empirical' or 'algorithmic'");
@@ -97,21 +96,20 @@ class Lung {
 
   ~Lung() {}
 
-  const std::set<int64_t> &getEpiCellIds() { return epiCellPositions1D; }
+  const std::set<int64_t> &getAirwayEpiCellIds() { return airwayEpiCellPositions1D; }
 
-  const std::vector<Int3D> &getEpiLocations() { return epiCellPositions3D; }
+  const std::set<int64_t> &getAlveoliEpiCellIds() { return alveoliEpiCellPositions1D; }
 
-  const std::vector<Level> &getLevels() { return levels; }
-
-  int getSkippedAirwayCount() { return skipped; }
+  const std::vector<Int3D> &getEpiLocations() { return positions; }
 
  private:
 
    int skipped = 0; // Bauer et al 2019
    std::vector<Int3D> leafs;
    std::vector<Level> levels;
-   std::set<int64_t> epiCellPositions1D;
-   std::vector<Int3D> epiCellPositions3D;
+   std::set<int64_t> alveoliEpiCellPositions1D;
+   std::set<int64_t> airwayEpiCellPositions1D;
+   std::vector<Int3D> positions;
    Int3D gridSize;
 
    Int3D rotate(const Int3D & vec,
@@ -161,36 +159,36 @@ class Lung {
      }
 
    Int3D constructSegment(const Int3D &root, const Level &level) {
-     std::vector<Int3D> epiCellPositions3D;
+     std::vector<Int3D> positions;
      // Build cylinder at origin along y-axis
      int64_t radius = level.d / 2;
      double az = 0;
      double inc = M_PI / 2;
      for (int64_t z = 0; z <= level.L; z++) {
        if (_options->lung_model_is_skeleton) {
-         epiCellPositions3D.push_back({.x = 0, .y = 0, .z = z});
+         positions.push_back({.x = 0, .y = 0, .z = z});
        } else {
          for (az = 0; az < 2 * M_PI; az += M_PI / 180) {
            int64_t x = (int64_t) round(radius * sin(inc) * cos(az));
            int64_t y = (int64_t) round(radius * sin(inc) * sin(az));
-           epiCellPositions3D.push_back({.x = x, .y = y, .z = z});
+           positions.push_back({.x = x, .y = y, .z = z});
          }
        }
      }
      // Treat as positional vectors and apply rotations and translate
-     for (int64_t i = 0; i < epiCellPositions3D.size(); i++) {
-       Int3D newPosition0 = rotate(epiCellPositions3D.at(i),
+     for (int64_t i = 0; i < positions.size(); i++) {
+       Int3D newPosition0 = rotate(positions.at(i),
         {.x = 0.0, .y = 1.0, .z = 0.0},
         level.bAngle);
        newPosition0.x += root.x;
        newPosition0.y += root.y;
        newPosition0.z += root.z;
-       epiCellPositions3D.at(i) = newPosition0;
+       positions.at(i) = newPosition0;
        // Verify new location is within grid
        if ((0 <= newPosition0.x && newPosition0.x < gridSize.x)
         && (0 <= newPosition0.y && newPosition0.y < gridSize.y)
         && (0 <= newPosition0.z && newPosition0.z < gridSize.z)) {
-          epiCellPositions1D.insert(newPosition0.x
+          airwayEpiCellPositions1D.insert(newPosition0.x
             + newPosition0.y * gridSize.x
             + newPosition0.z * gridSize.x * gridSize.y);
        }
@@ -206,26 +204,26 @@ class Lung {
    }
 
    void constructSegment(const Level &level) {
-     std::vector<Int3D> epiCellPositions3D;
+     std::vector<Int3D> positions;
      // Build cylinder at origin along y-axis
      int64_t radius = level.d;
      double az = 0, inc = M_PI / 2;
      for (int64_t z = 0; z <= level.L; z++) {
        if (_options->lung_model_is_skeleton) {
-         epiCellPositions3D.push_back({.x = 0, .y = 0, .z = z});
+         positions.push_back({.x = 0, .y = 0, .z = z});
        } else {
          for (az = 0; az < 2 * M_PI; az += M_PI / 180) {
            int64_t x = (int64_t) round(radius * sin(inc) * cos(az));
            int64_t y = (int64_t) round(radius * sin(inc) * sin(az));
-           epiCellPositions3D.push_back({.x = x, .y = y, .z = z});
+           positions.push_back({.x = x, .y = y, .z = z});
          }
        }
      }
      // Treat as positional vectors and apply rotations and translate
      az = (level.direction.x == 0) ? 0 : atan(level.direction.y / level.direction.x);
      inc = acos(level.direction.z);
-     for (int64_t i = 0; i < epiCellPositions3D.size(); i++) {
-         Int3D newPosition0 = rotate(epiCellPositions3D.at(i),
+     for (int64_t i = 0; i < positions.size(); i++) {
+         Int3D newPosition0 = rotate(positions.at(i),
              {.x = 0.0, .y = 1.0, .z = 0.0},
              inc);
          newPosition0 = rotate(newPosition0,
@@ -234,12 +232,12 @@ class Lung {
          newPosition0.x += level.centroid.x;
          newPosition0.y += level.centroid.y;
          newPosition0.z += level.centroid.z;
-         epiCellPositions3D.at(i) = newPosition0;
+         positions.at(i) = newPosition0;
          // Verify new location is within grid
          if ((0 <= newPosition0.x && newPosition0.x < gridSize.x) &&
              (0 <= newPosition0.y && newPosition0.y < gridSize.y) &&
              (0 <= newPosition0.z && newPosition0.z < gridSize.z)) {
-           epiCellPositions1D.insert(newPosition0.x + newPosition0.y * gridSize.x +
+           airwayEpiCellPositions1D.insert(newPosition0.x + newPosition0.y * gridSize.x +
                                      newPosition0.z * gridSize.x * gridSize.y);
          }
        }
@@ -270,10 +268,10 @@ class Lung {
    }
 
    void addPosition(int x, int y, int z, const Int3D & pos) {
-     epiCellPositions3D.push_back({.x = x + pos.x,
+     positions.push_back({.x = x + pos.x,
        .y = y + pos.y,
        .z = z + pos.z});
-     epiCellPositions1D.insert((x + pos.x)
+     alveoliEpiCellPositions1D.insert((x + pos.x)
       + (y + pos.y) * gridSize.x
       + (z + pos.z) * gridSize.x * gridSize.y);
    }

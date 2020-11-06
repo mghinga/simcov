@@ -388,7 +388,8 @@ static int get_square_block_dim(int64_t num_grid_points) {
 }
 
 void Tissue::construct(GridCoords grid_size,
-  const std::set<int64_t> & epiCellIds) {
+  const std::set<int64_t> & airwayEpiCellIds,
+  const std::set<int64_t> & alveoliEpiCellIds) {
   auto remainder = [](int64_t numerator, int64_t denominator) -> bool {
     return ((double)numerator / denominator - (numerator / denominator) != 0);
   };
@@ -441,10 +442,18 @@ void Tissue::construct(GridCoords grid_size,
       auto neighbors = get_neighbors(coords);
       // infectable epicells should be placed according to the underlying lung structure
       // (gaps, etc)
-      if (epiCellIds.count(id) != 0) {
+      if (alveoliEpiCellIds.count(id) != 0) {
         EpiCell *epicell = new EpiCell(id);
-        if ((coords.x + coords.y + coords.z) % _options->infectable_spacing != 0)
+        if ((coords.x + coords.y + coords.z) % _options->infectable_spacing != 0) {
           epicell->infectable = false;
+        }
+        epicell->status = EpiCellStatus::ALVEOLI;
+        grid_points->emplace_back(GridPoint({id, coords, neighbors, epicell}));
+      } else if (airwayEpiCellIds.count(id) != 0) {
+        EpiCell *epicell = new EpiCell(id);
+        if ((coords.x + coords.y + coords.z) % _options->infectable_spacing != 0) {
+          epicell->infectable = false;
+        }
         grid_points->emplace_back(GridPoint({id, coords, neighbors, epicell}));
       } else {
         grid_points->emplace_back(GridPoint({id, coords, neighbors, nullptr}));

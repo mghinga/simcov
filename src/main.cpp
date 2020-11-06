@@ -485,7 +485,9 @@ void sample(int time_step, vector<SampleData> &samples, int64_t start_id, ViewOb
         if (sample.has_tcell) val = 255;
         break;
       case ViewObject::EPICELL:
-        if (sample.has_epicell) val = static_cast<unsigned char>(sample.epicell_status) + 1;
+      if (sample.has_epicell) val = 1;
+      if (sample.epicell_status == EpiCellStatus::ALVEOLI) val += 1;
+        // if (sample.has_epicell) val = static_cast<unsigned char>(sample.epicell_status) + 1;
         //if (val > 1)
         //  DBG(time_step, " writing epicell ", (int)val, " at index ", (i + start_id), "\n");
         break;
@@ -658,7 +660,8 @@ int main(int argc, char **argv) {
   tissue.construct({_options->dimensions[0],
       _options->dimensions[1],
       _options->dimensions[2]},
-    lung.getEpiCellIds());
+    lung.getAirwayEpiCellIds(),
+    lung.getAlveoliEpiCellIds());
   initial_infection(tissue);
   SLOG(KBLUE, "Memory used on node 0 after initialization is  ",
        get_size_str(start_free_mem - get_free_mem()), KNORM, "\n");
