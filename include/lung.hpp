@@ -6,6 +6,7 @@
 #include <algorithm>
 
 #include "upcxx_utils.hpp"
+#include "utils.hpp"
 #include "options.hpp"
 
 extern shared_ptr<Options> _options;
@@ -57,7 +58,8 @@ class Lung {
 
  public:
 
-  Lung() {
+  Lung(shared_ptr<Random> rnd_gen) {
+    this->rnd_gen = rnd_gen;
     gridSize.x = _options->dimensions[0];
     gridSize.y = _options->dimensions[1];
     gridSize.z = _options->dimensions[2];
@@ -65,17 +67,19 @@ class Lung {
       loadEstimatedParameters();
       // Draw root
       Level lvl = levels.at(0);
-      Int3D child = constructSegment({gridSize.x / 2 + 3 * lvl.d, 0, 0}, lvl);
-      //TODO Int3D child = constructSegment({gridSize.x / 2 + 3 * lvl.d, gridSize.y / 2, 0}, lvl);
+      Int3D child = constructSegment({gridSize.x/2 + 3*lvl.d, gridSize.y/2, 0},
+        lvl,
+        0.0);
       // Recursively build tree
       construct(child, 1, lvl.bAngle);
-      // Build alveolus structures
-      for (Int3D leaf : leafs) {
-        Int3D left(leaf.x + 2, leaf.y + 2, leaf.z);
-        constructAlveoli(left);
-        Int3D right(leaf.x + 7, leaf.y + 7, leaf.z);
-        constructAlveoli(right);
-      }
+      // // Build alveolus structures
+      // for (Int3D leaf : leafs) {
+      // //TODO Int3D leaf(0, 0, 0);
+      //   Int3D left(leaf.x + 2, leaf.y + 2, leaf.z);
+      //   constructAlveoli(left);
+      //   Int3D right(leaf.x + 7, leaf.y + 7, leaf.z);
+      //   constructAlveoli(right);
+      // }
       SLOG("Number of alveoli ", 2 * leafs.size(), "\n");
     } else if (_options->lung_model_type == "empirical") { // Empirical
       loadEmpiricalData();
@@ -105,12 +109,14 @@ class Lung {
  private:
 
    int skipped = 0; // Bauer et al 2019
+   double scale = 10;// 1 / 5e-3; // Convert cm to um
    std::vector<Int3D> leafs;
    std::vector<Level> levels;
    std::set<int64_t> alveoliEpiCellPositions1D;
    std::set<int64_t> airwayEpiCellPositions1D;
    std::vector<Int3D> positions;
    Int3D gridSize;
+   shared_ptr<Random> rnd_gen;
 
    Int3D rotate(const Int3D & vec,
      const Double3D & axis,
@@ -143,22 +149,25 @@ class Lung {
          leafs.push_back({.x = root.x, .y = root.y, .z = root.z});
          return;
        }
+       double rotateZ = (generation < 7) ? 0.0 : rnd_gen->get(0,180)*M_PI/180;
        // Draw left child bronchiole
        Level lvl = levels.at(generation);
        lvl.bAngle = previousBranchAngle - lvl.bAngle;
-       Int3D child = constructSegment(root, lvl);
+       Int3D child = constructSegment(root, lvl, rotateZ);
        construct(child, generation + 1, lvl.bAngle);
        // Draw right child bronchiole
        lvl = levels.at(generation);
        lvl.bAngle = previousBranchAngle + lvl.bAngle;
        if (lvl.count > 1) {
          lvl.gAngle = -lvl.gAngle;
-         child = constructSegment(root, lvl);
+         child = constructSegment(root, lvl, rotateZ);
          construct(child, generation + 1, lvl.bAngle);
        }
      }
 
-   Int3D constructSegment(const Int3D &root, const Level &level) {
+   Int3D constructSegment(const Int3D &root,
+     const Level &level,
+     double rotateZ) {
      std::vector<Int3D> positions;
      // Build cylinder at origin along y-axis
      int64_t radius = level.d / 2;
@@ -177,29 +186,37 @@ class Lung {
      }
      // Treat as positional vectors and apply rotations and translate
      for (int64_t i = 0; i < positions.size(); i++) {
+       // Rotate y
        Int3D newPosition0 = rotate(positions.at(i),
         {.x = 0.0, .y = 1.0, .z = 0.0},
         level.bAngle);
-       newPosition0.x += root.x;
-       newPosition0.y += root.y;
-       newPosition0.z += root.z;
-       positions.at(i) = newPosition0;
+       // Rotate z
+       Int3D newPosition1 = rotate(newPosition0,
+        {.x = 0.0, .y = 0.0, .z = 1.0},
+        rotateZ);
+       newPosition1.x += root.x;
+       newPosition1.y += root.y;
+       newPosition1.z += root.z;
+       positions.at(i) = newPosition1;
        // Verify new location is within grid
-       if ((0 <= newPosition0.x && newPosition0.x < gridSize.x)
-        && (0 <= newPosition0.y && newPosition0.y < gridSize.y)
-        && (0 <= newPosition0.z && newPosition0.z < gridSize.z)) {
-          airwayEpiCellPositions1D.insert(newPosition0.x
-            + newPosition0.y * gridSize.x
-            + newPosition0.z * gridSize.x * gridSize.y);
+       if ((0 <= newPosition1.x && newPosition1.x < gridSize.x)
+        && (0 <= newPosition1.y && newPosition1.y < gridSize.y)
+        && (0 <= newPosition1.z && newPosition1.z < gridSize.z)) {
+          airwayEpiCellPositions1D.insert(newPosition1.x
+            + newPosition1.y * gridSize.x
+            + newPosition1.z * gridSize.x * gridSize.y);
        }
      }
      // Return root for next generation
-     Int3D base = rotate({.x = 0, .y = 0, .z = level.L},
+     Int3D base0 = rotate({.x = 0, .y = 0, .z = level.L},
        {.x = 0.0, .y = 1.0, .z = 0.0},
        level.bAngle);
-     Int3D rval(base.x + root.x,
-       base.y + root.y,
-       base.z + root.z);
+     Int3D base1 = rotate(base0,
+       {.x = 0.0, .y = 0.0, .z = 1.0},
+       rotateZ);
+     Int3D rval(base1.x + root.x,
+       base1.y + root.y,
+       base1.z + root.z);
      return rval;
    }
 
@@ -281,7 +298,6 @@ class Lung {
      std::ifstream file;
      file.open(_options->lung_model_dir + "/table.txt");
      std::string line;
-     double m = 1 / 5e-3; // Convert cm to um
      if (file.is_open()) {
        while (std::getline(file, line)) {
          std::stringstream lstream(line);
@@ -291,9 +307,9 @@ class Lung {
          lstream >> tempI;
          lstream >> e.count;
          lstream >> tempD;
-         e.L = (int64_t) round(m * tempD);
+         e.L = (int64_t) round(scale * tempD);
          lstream >> tempD;
-         e.d = (int64_t) round(m * tempD);
+         e.d = (int64_t) round(scale * tempD);
          lstream >> tempI;
          e.bAngle = tempI * M_PI / 180;
          lstream >> tempI;
@@ -312,7 +328,6 @@ class Lung {
      std::ifstream file;
      file.open(_options->lung_model_dir + "/table.csv");
      std::string line;
-     double m = 10; // Convert 10^0 mm to 10^1 mm
      if (file.is_open()) {
        while (std::getline(file, line)) {
          std::stringstream lstream(line);
@@ -325,17 +340,17 @@ class Lung {
            getline(lstream, str, ','); // 0
            getline(lstream, str, ','); // 1
            getline(lstream, str, ','); // 2 length
-           e.L = (int64_t) round(m * std::stod(str));
+           e.L = (int64_t) round(scale * std::stod(str));
            getline(lstream, str, ','); // 3 diameter
-           e.d = (int64_t) round(m * std::stod(str));
+           e.d = (int64_t) round(scale * std::stod(str));
            getline(lstream, str, ','); // 4 empty?
            // 5-7 centroid
            getline(lstream, str, ',');
-           e.centroid.x = (int64_t) round(m * std::stod(str));
+           e.centroid.x = (int64_t) round(scale * std::stod(str));
            getline(lstream, str, ',');
-           e.centroid.y = (int64_t) round(m * std::stod(str));
+           e.centroid.y = (int64_t) round(scale * std::stod(str));
            getline(lstream, str, ',');
-           e.centroid.z = (int64_t) round(m * std::stod(str));
+           e.centroid.z = (int64_t) round(scale * std::stod(str));
            // 8-10 Direction
            getline(lstream, str, ',');
            e.direction.x = std::stod(str);
