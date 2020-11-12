@@ -72,14 +72,13 @@ class Lung {
         0.0);
       // Recursively build tree
       construct(child, 1, lvl.bAngle);
-      // // Build alveolus structures
-      // for (Int3D leaf : leafs) {
-      // //TODO Int3D leaf(0, 0, 0);
-      //   Int3D left(leaf.x + 2, leaf.y + 2, leaf.z);
-      //   constructAlveoli(left);
-      //   Int3D right(leaf.x + 7, leaf.y + 7, leaf.z);
-      //   constructAlveoli(right);
-      // }
+      // Build alveolus structures
+      for (Int3D leaf : leafs) {//TODO Int3D leaf(0, 0, 0);
+        Int3D left(leaf.x + 2, leaf.y + 2, leaf.z);
+        constructAlveoli(left);
+        Int3D right(leaf.x + 7, leaf.y + 7, leaf.z);
+        constructAlveoli(right);
+      }
       SLOG("Number of alveoli ", 2 * leafs.size(), "\n");
     } else if (_options->lung_model_type == "empirical") { // Empirical
       loadEmpiricalData();
@@ -109,7 +108,7 @@ class Lung {
  private:
 
    int skipped = 0; // Bauer et al 2019
-   double scale = 10;// 1 / 5e-3; // Convert cm to um
+   double scale = 1 / 5e-3; // Convert cm to um
    std::vector<Int3D> leafs;
    std::vector<Level> levels;
    std::set<int64_t> alveoliEpiCellPositions1D;
