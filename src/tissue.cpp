@@ -45,8 +45,8 @@ int64_t GridCoords::to_1d() const {
   int64_t block_x = x / _grid_blocks.size_x;
   int64_t block_y = y / _grid_blocks.size_y;
   int64_t block_z = z / _grid_blocks.size_z;
-  int64_t block_id = block_x + block_y * _grid_blocks.num_x +
-                     block_z * _grid_blocks.num_x * _grid_blocks.num_y;
+  int64_t block_id =
+      block_x + block_y * _grid_blocks.num_x + block_z * _grid_blocks.num_x * _grid_blocks.num_y;
   int64_t in_block_x = x % _grid_blocks.size_x;
   int64_t in_block_y = y % _grid_blocks.size_y;
   int64_t in_block_z = z % _grid_blocks.size_z;
@@ -70,43 +70,64 @@ void GridCoords::set_rnd(shared_ptr<Random> rnd_gen) {
   z = rnd_gen->get(0, _grid_size->z);
 }
 
+TCell::TCell(const string &id)
+    : id(id) {
+  vascular_time_steps = _rnd_gen->get_poisson(_options->tcell_vascular_period);
+  tissue_time_steps = _rnd_gen->get_poisson(_options->tcell_tissue_period);
+  DBG("init tcell ", id, " ", vascular_time_steps, " ", tissue_time_steps, "\n");
+}
+
+TCell::TCell() {
+  vascular_time_steps = _rnd_gen->get_poisson(_options->tcell_vascular_period);
+  tissue_time_steps = _rnd_gen->get_poisson(_options->tcell_tissue_period);
+}
+
+EpiCell::EpiCell(int id)
+    : id(id) {
+  incubation_time_steps = _rnd_gen->get_poisson(_options->incubation_period);
+  expressing_time_steps = _rnd_gen->get_poisson(_options->expressing_period);
+  apoptotic_time_steps = _rnd_gen->get_poisson(_options->apoptosis_period);
+  DBG("init epicell ", str(), "\n");
+}
 
 string EpiCell::str() {
   ostringstream oss;
-  oss << id << " " << EpiCellStatusStr[(int)status];
+  oss << id << " " << EpiCellStatusStr[(int)status] << " " << incubation_time_steps << " "
+      << expressing_time_steps << " " << apoptotic_time_steps;
   return oss.str();
 }
 
-void EpiCell::infect(int time_step) {
+void EpiCell::infect() {
   assert(status == EpiCellStatus::HEALTHY);
   assert(infectable);
   status = EpiCellStatus::INCUBATING;
-  infection_time_step = time_step;
 }
 
 bool EpiCell::transition_to_expressing() {
   assert(status == EpiCellStatus::INCUBATING);
-  if (!_rnd_gen->trial_success(1.0 / _options->incubation_period)) return false;
+  incubation_time_steps--;
+  if (incubation_time_steps > 0) return false;
   status = EpiCellStatus::EXPRESSING;
-  is_expressing = true;
   return true;
 }
 
 bool EpiCell::was_expressing() {
   // this is used to determine if the epicell was expressing before apoptosis was induced
   assert(status == EpiCellStatus::APOPTOTIC);
-  return is_expressing;
+  return (incubation_time_steps == 0);
 }
 
 bool EpiCell::apoptosis_death() {
   assert(status == EpiCellStatus::APOPTOTIC);
-  if (!_rnd_gen->trial_success(1.0 / _options->apoptosis_period)) return false;
+  apoptotic_time_steps--;
+  if (apoptotic_time_steps > 0) return false;
   status = EpiCellStatus::DEAD;
   return true;
 }
 
 bool EpiCell::infection_death() {
-  if (!_rnd_gen->trial_success(1.0 / _options->expressing_period)) return false;
+  expressing_time_steps--;
+  if (expressing_time_steps > 0) return false;
   status = EpiCellStatus::DEAD;
   return true;
 }
@@ -115,16 +136,16 @@ bool EpiCell::is_active() {
   return (status != EpiCellStatus::HEALTHY && status != EpiCellStatus::DEAD);
 }
 
-double EpiCell::get_binding_prob(int time_step) {
+double EpiCell::get_binding_prob() {
   // binding prob is linearly scaled from 0 to 1 for incubating cells over the course of the
   // incubation period, but is always 1 for expressing cells
-  if (status == EpiCellStatus::EXPRESSING) return _options->max_binding_prob;
-  double prob = _options->max_binding_prob *
-                (1.0 - (double)(time_step - infection_time_step) / _options->incubation_period);
-  if (prob <= 0) return 0;
+  if (status == EpiCellStatus::EXPRESSING || status == EpiCellStatus::APOPTOTIC)
+    return _options->max_binding_prob;
+  double scaling = 1.0 - (double)incubation_time_steps / _options->incubation_period;
+  if (scaling < 0) scaling = 0;
+  double prob = _options->max_binding_prob * scaling;
   return min(prob, _options->max_binding_prob);
 }
-
 
 string GridPoint::str() const {
   ostringstream oss;
@@ -138,204 +159,12 @@ bool GridPoint::is_active() {
   return ((epicell && epicell->is_active()) || virions || chemokine > 0 || tcell);
 }
 
-
-
-intrank_t Tissue::get_rank_for_grid_point(const GridCoords &coords) {
-  int64_t id = coords.to_1d();
-  int64_t block_i = id / _grid_blocks.block_size;
-  return block_i % rank_n();
-}
-
-GridPoint *Tissue::get_local_grid_point(grid_points_t &grid_points, const GridCoords &coords) {
-  auto id = coords.to_1d();
-  int64_t block_i = id / _grid_blocks.block_size / rank_n();
-  int64_t i = id % _grid_blocks.block_size + block_i * _grid_blocks.block_size;
-  assert(i < grid_points->size());
-  GridPoint *grid_point = &(*grid_points)[i];
-  assert(grid_point->id == id);
-  assert(grid_point->coords.x == coords.x);
-  assert(grid_point->coords.y == coords.y);
-  assert(grid_point->coords.z == coords.z);
-  return grid_point;
-}
-
-SampleData Tissue::get_grid_point_sample_data(const GridCoords &coords) {
-  return upcxx::rpc(
-             get_rank_for_grid_point(coords),
-             [](grid_points_t &grid_points, GridCoords coords) {
-               GridPoint *grid_point = Tissue::get_local_grid_point(grid_points, coords);
-               SampleData sample;
-               sample.id = grid_point->id;
-               if (grid_point->tcell) sample.has_tcell = true;
-                 if (grid_point->epicell) {
-                   sample.has_epicell = true;
-                   sample.epicell_status = grid_point->epicell->status;
-                 }
-               sample.virions = grid_point->virions;
-               sample.chemokine = grid_point->chemokine;
-               return sample;
-             },
-             grid_points, coords)
-      .wait();
-}
-
-vector<GridCoords> Tissue::get_neighbors(GridCoords c) {
-  vector<GridCoords> n = {};
-  int64_t newx, newy, newz;
-  for (int64_t i = -1; i <= 1; i++) {
-    for (int64_t j = -1; j <= 1; j++) {
-      for (int64_t k = -1; k <= 1; k++) {
-        newx = c.x + i;
-        newy = c.y + j;
-        newz = c.z + k;
-        if ((newx >= 0 && newx < _grid_size->x) && (newy >= 0 && newy < _grid_size->y) &&
-            (newz >= 0 && newz < _grid_size->z)) {
-          if (newx != c.x || newy != c.y || newz != c.z) n.push_back(GridCoords(newx, newy, newz));
-        }
-      }
-    }
-  }
-  return n;
-}
-
-int64_t Tissue::get_num_local_grid_points() {
-  return grid_points->size();
-}
-
-bool Tissue::set_initial_infection(GridCoords coords) {
-  return upcxx::rpc(
-             get_rank_for_grid_point(coords),
-             [](grid_points_t &grid_points, new_active_grid_points_t &new_active_grid_points,
-                GridCoords coords) {
-               GridPoint *grid_point = Tissue::get_local_grid_point(grid_points, coords);
-               DBG("set infected for grid point ", grid_point, " ", grid_point->str(), "\n");
-               // ensure we have at least on infected cell to start
-               /*
-               if (grid_point->epicell->status != EpiCellStatus::HEALTHY) return false;
-               grid_point->epicell->infectable = true;
-               grid_point->epicell->infect();
-               */
-               grid_point->virions = _options->initial_infection;
-               new_active_grid_points->insert({grid_point, true});
-               return true;
-             },
-             grid_points, new_active_grid_points, coords)
-      .wait();
-}
-
-void Tissue::accumulate_chemokines(HASH_TABLE<int64_t, double> &chemokines_to_update,
-                                   IntermittentTimer &timer) {
-  timer.start();
-  // accumulate updates for each target rank
-  HASH_TABLE<intrank_t, vector<pair<GridCoords, double>>> target_rank_updates;
-  for (auto& [coords_1d, chemokines] : chemokines_to_update) {
-    upcxx::progress();
-    GridCoords coords(coords_1d);
-    target_rank_updates[get_rank_for_grid_point(coords)].push_back({coords, chemokines});
-  }
-  future<> fut_chain = make_future<>();
-  // dispatch all updates to each target rank in turn
-  for (auto& [target_rank, update_vector] : target_rank_updates) {
-    upcxx::progress();
-    auto fut = upcxx::rpc(
-        target_rank,
-        [](grid_points_t &grid_points, new_active_grid_points_t &new_active_grid_points,
-           upcxx::view<pair<GridCoords, double>> update_vector) {
-          for (auto &[coords, chemokine] : update_vector) {
-            GridPoint *grid_point = Tissue::get_local_grid_point(grid_points, coords);
-            new_active_grid_points->insert({grid_point, true});
-            // just accumulate the concentrations. We will adjust them to be the average
-            // of all neighbors later
-            grid_point->nb_chemokine += chemokine;
-          }
-        },
-        grid_points, new_active_grid_points, upcxx::make_view(update_vector));
-    fut_chain = when_all(fut_chain, fut);
- }
-  fut_chain.wait();
-  timer.stop();
-}
-
-void Tissue::accumulate_virions(HASH_TABLE<int64_t, int> &virions_to_update,
-                                IntermittentTimer &timer) {
-  timer.start();
-  // accumulate updates for each target rank
-  HASH_TABLE<intrank_t, vector<pair<GridCoords, int>>> target_rank_updates;
-  for (auto& [coords_1d, virions] : virions_to_update) {
-    upcxx::progress();
-    GridCoords coords(coords_1d);
-    target_rank_updates[get_rank_for_grid_point(coords)].push_back({coords, virions});
-  }
-  future<> fut_chain = make_future<>();
-  // dispatch all updates to each target rank in turn
-  for (auto& [target_rank, update_vector] : target_rank_updates) {
-    upcxx::progress();
-    auto fut = upcxx::rpc(
-        target_rank,
-        [](grid_points_t &grid_points, new_active_grid_points_t &new_active_grid_points,
-           upcxx::view<pair<GridCoords, int>> update_vector) {
-          for (auto &[coords, virions] : update_vector) {
-            GridPoint *grid_point = Tissue::get_local_grid_point(grid_points, coords);
-            new_active_grid_points->insert({grid_point, true});
-            grid_point->nb_virions += virions;
-          }
-        },
-        grid_points, new_active_grid_points, upcxx::make_view(update_vector));
-    fut_chain = when_all(fut_chain, fut);
- }
-  fut_chain.wait();
-  timer.stop();
-}
-
-double Tissue::get_chemokine(GridCoords coords) {
-  return upcxx::rpc(
-             get_rank_for_grid_point(coords),
-             [](grid_points_t &grid_points, GridCoords coords) {
-               GridPoint *grid_point = Tissue::get_local_grid_point(grid_points, coords);
-               return grid_point->chemokine;
-             },
-             grid_points, coords)
-      .wait();
-}
-
-list<TCell> *Tissue::get_circulating_tcells() {
-  return &(*circulating_tcells);
-}
-
-void Tissue::add_circulating_tcell(GridCoords coords, TCell tcell) {
-  upcxx::rpc(
-      get_rank_for_grid_point(coords),
-      [](dist_object<list<TCell>> &circulating_tcells, TCell tcell) {
-        circulating_tcells->push_back(tcell);
-      },
-      circulating_tcells, tcell)
-      .wait();
-}
-
-bool Tissue::try_add_tissue_tcell(GridCoords coords, TCell tcell, bool extravasate) {
-  return upcxx::rpc(
-             get_rank_for_grid_point(coords),
-             [](grid_points_t &grid_points, new_active_grid_points_t &new_active_grid_points,
-                GridCoords coords, TCell tcell, bool extravasate) {
-               GridPoint *grid_point = Tissue::get_local_grid_point(grid_points, coords);
-               if (grid_point->tcell) return false;
-               if (extravasate && grid_point->chemokine < _options->min_chemokine) return false;
-               new_active_grid_points->insert({grid_point, true});
-               tcell.moved = true;
-               grid_point->tcell = new TCell(tcell);
-               return true;
-             },
-             grid_points, new_active_grid_points, coords, tcell, extravasate)
-      .wait();
-}
-
 static int get_cube_block_dim(int64_t num_grid_points) {
   int block_dim = 1;
   int min_dim = min(min(_grid_size->x, _grid_size->y), _grid_size->z);
   for (int i = 1; i < min_dim; i++) {
     // only allow dims that divide each main dimension perfectly
-    if (remainder(_grid_size->x, i) || remainder(_grid_size->y, i) ||
-        remainder(_grid_size->z, i)) {
+    if (remainder(_grid_size->x, i) || remainder(_grid_size->y, i) || remainder(_grid_size->z, i)) {
       DBG("dim ", i, " does not divide all main dimensions cleanly\n");
       continue;
     }
@@ -387,14 +216,17 @@ static int get_square_block_dim(int64_t num_grid_points) {
   return block_dim;
 }
 
-void Tissue::construct(GridCoords grid_size,
-  const std::set<int64_t> & airwayEpiCellIds,
-  const std::set<int64_t> & alveoliEpiCellIds) {
+Tissue::Tissue(const std::set<int64_t> &airwayEpiCellIds,
+               const std::set<int64_t> &alveoliEpiCellIds)
+    : grid_points({})
+    , new_active_grid_points({})
+    , circulating_tcells({}) {
   auto remainder = [](int64_t numerator, int64_t denominator) -> bool {
     return ((double)numerator / denominator - (numerator / denominator) != 0);
   };
   BarrierTimer timer(__FILEFUNC__, false, true);
-  _grid_size = make_shared<GridCoords>(grid_size);
+  _grid_size = make_shared<GridCoords>(
+      GridCoords(_options->dimensions[0], _options->dimensions[1], _options->dimensions[2]));
   int64_t num_grid_points = get_num_grid_points();
   // find the biggest cube that perfectly divides the grid and gives enough
   // data for at least two cubes per rank (for load
@@ -410,8 +242,8 @@ void Tissue::construct(GridCoords grid_size,
     SWARN("Using a block size of 1: this will result in a lot of "
           "communication. You should change the dimensions.");
 
-  _grid_blocks.block_size = (_grid_size->z > 1 ? block_dim * block_dim * block_dim :
-                                                 block_dim * block_dim);
+  _grid_blocks.block_size =
+      (_grid_size->z > 1 ? block_dim * block_dim * block_dim : block_dim * block_dim);
   _grid_blocks.num_x = _grid_size->x / block_dim;
   _grid_blocks.num_y = _grid_size->y / block_dim;
   _grid_blocks.num_z = (_grid_size->z > 1 ? _grid_size->z / block_dim : 1);
@@ -440,8 +272,6 @@ void Tissue::construct(GridCoords grid_size,
       assert(id < num_grid_points);
       GridCoords coords(id);
       auto neighbors = get_neighbors(coords);
-      // infectable epicells should be placed according to the underlying lung structure
-      // (gaps, etc)
       if (alveoliEpiCellIds.count(id) != 0) {
         EpiCell *epicell = new EpiCell(id);
         if ((coords.x + coords.y + coords.z) % _options->infectable_spacing != 0) {
@@ -458,7 +288,6 @@ void Tissue::construct(GridCoords grid_size,
       } else {
         grid_points->emplace_back(GridPoint({id, coords, neighbors, nullptr}));
       }
-
 #ifdef DEBUG
       DBG("adding grid point ", id, " at ", coords.str(), "\n");
       auto id_1d = coords.to_1d();
@@ -472,6 +301,217 @@ void Tissue::construct(GridCoords grid_size,
     }
   }
   barrier();
+}
+
+intrank_t Tissue::get_rank_for_grid_point(const GridCoords &coords) {
+  int64_t id = coords.to_1d();
+  int64_t block_i = id / _grid_blocks.block_size;
+  return block_i % rank_n();
+}
+
+GridPoint *Tissue::get_local_grid_point(grid_points_t &grid_points, const GridCoords &coords) {
+  auto id = coords.to_1d();
+  int64_t block_i = id / _grid_blocks.block_size / rank_n();
+  int64_t i = id % _grid_blocks.block_size + block_i * _grid_blocks.block_size;
+  assert(i < grid_points->size());
+  GridPoint *grid_point = &(*grid_points)[i];
+  assert(grid_point->id == id);
+  assert(grid_point->coords.x == coords.x);
+  assert(grid_point->coords.y == coords.y);
+  assert(grid_point->coords.z == coords.z);
+  return grid_point;
+}
+
+SampleData Tissue::get_grid_point_sample_data(const GridCoords &coords) {
+  return upcxx::rpc(
+             get_rank_for_grid_point(coords),
+             [](grid_points_t &grid_points, GridCoords coords) {
+               GridPoint *grid_point = Tissue::get_local_grid_point(grid_points, coords);
+               SampleData sample;
+               sample.id = grid_point->id;
+               if (grid_point->tcell) sample.has_tcell = true;
+               if (grid_point->epicell) {
+                 sample.has_epicell = true;
+                 sample.epicell_status = grid_point->epicell->status;
+               }
+               sample.virions = grid_point->virions;
+               sample.chemokine = grid_point->chemokine;
+               return sample;
+             },
+             grid_points, coords)
+      .wait();
+}
+
+vector<GridCoords> Tissue::get_neighbors(GridCoords c) {
+  vector<GridCoords> n = {};
+  int64_t newx, newy, newz;
+  for (int64_t i = -1; i <= 1; i++) {
+    for (int64_t j = -1; j <= 1; j++) {
+      for (int64_t k = -1; k <= 1; k++) {
+        newx = c.x + i;
+        newy = c.y + j;
+        newz = c.z + k;
+        if ((newx >= 0 && newx < _grid_size->x) && (newy >= 0 && newy < _grid_size->y) &&
+            (newz >= 0 && newz < _grid_size->z)) {
+          if (newx != c.x || newy != c.y || newz != c.z) n.push_back(GridCoords(newx, newy, newz));
+        }
+      }
+    }
+  }
+  return n;
+}
+
+int64_t Tissue::get_num_local_grid_points() { return grid_points->size(); }
+
+bool Tissue::set_initial_infection(GridCoords coords) {
+  return upcxx::rpc(
+             get_rank_for_grid_point(coords),
+             [](grid_points_t &grid_points, new_active_grid_points_t &new_active_grid_points,
+                GridCoords coords) {
+               GridPoint *grid_point = Tissue::get_local_grid_point(grid_points, coords);
+               DBG("set infected for grid point ", grid_point, " ", grid_point->str(), "\n");
+               // ensure we have at least on infected cell to start
+               /*
+               if (grid_point->epicell->status != EpiCellStatus::HEALTHY) return false;
+               grid_point->epicell->infectable = true;
+               grid_point->epicell->infect();
+               */
+               grid_point->virions = _options->initial_infection;
+               new_active_grid_points->insert({grid_point, true});
+               return true;
+             },
+             grid_points, new_active_grid_points, coords)
+      .wait();
+}
+
+void Tissue::accumulate_chemokines(HASH_TABLE<int64_t, double> &chemokines_to_update,
+                                   IntermittentTimer &timer) {
+  timer.start();
+  // accumulate updates for each target rank
+  HASH_TABLE<intrank_t, vector<pair<GridCoords, double>>> target_rank_updates;
+  for (auto &[coords_1d, chemokines] : chemokines_to_update) {
+    upcxx::progress();
+    GridCoords coords(coords_1d);
+    target_rank_updates[get_rank_for_grid_point(coords)].push_back({coords, chemokines});
+  }
+  future<> fut_chain = make_future<>();
+  // dispatch all updates to each target rank in turn
+  for (auto &[target_rank, update_vector] : target_rank_updates) {
+    upcxx::progress();
+    auto fut = upcxx::rpc(
+        target_rank,
+        [](grid_points_t &grid_points, new_active_grid_points_t &new_active_grid_points,
+           upcxx::view<pair<GridCoords, double>> update_vector) {
+          for (auto &[coords, chemokine] : update_vector) {
+            GridPoint *grid_point = Tissue::get_local_grid_point(grid_points, coords);
+            new_active_grid_points->insert({grid_point, true});
+            // just accumulate the concentrations. We will adjust them to be the average
+            // of all neighbors later
+            grid_point->nb_chemokine += chemokine;
+          }
+        },
+        grid_points, new_active_grid_points, upcxx::make_view(update_vector));
+    fut_chain = when_all(fut_chain, fut);
+  }
+  fut_chain.wait();
+  timer.stop();
+}
+
+void Tissue::accumulate_virions(HASH_TABLE<int64_t, int> &virions_to_update,
+                                IntermittentTimer &timer) {
+  timer.start();
+  // accumulate updates for each target rank
+  HASH_TABLE<intrank_t, vector<pair<GridCoords, int>>> target_rank_updates;
+  for (auto &[coords_1d, virions] : virions_to_update) {
+    upcxx::progress();
+    GridCoords coords(coords_1d);
+    target_rank_updates[get_rank_for_grid_point(coords)].push_back({coords, virions});
+  }
+  future<> fut_chain = make_future<>();
+  // dispatch all updates to each target rank in turn
+  for (auto &[target_rank, update_vector] : target_rank_updates) {
+    upcxx::progress();
+    auto fut = upcxx::rpc(
+        target_rank,
+        [](grid_points_t &grid_points, new_active_grid_points_t &new_active_grid_points,
+           upcxx::view<pair<GridCoords, int>> update_vector) {
+          for (auto &[coords, virions] : update_vector) {
+            GridPoint *grid_point = Tissue::get_local_grid_point(grid_points, coords);
+            new_active_grid_points->insert({grid_point, true});
+            grid_point->nb_virions += virions;
+          }
+        },
+        grid_points, new_active_grid_points, upcxx::make_view(update_vector));
+    fut_chain = when_all(fut_chain, fut);
+  }
+  fut_chain.wait();
+  timer.stop();
+}
+
+double Tissue::get_chemokine(GridCoords coords) {
+  return upcxx::rpc(
+             get_rank_for_grid_point(coords),
+             [](grid_points_t &grid_points, GridCoords coords) {
+               GridPoint *grid_point = Tissue::get_local_grid_point(grid_points, coords);
+               return grid_point->chemokine;
+             },
+             grid_points, coords)
+      .wait();
+}
+
+list<TCell> *Tissue::get_circulating_tcells() { return &(*circulating_tcells); }
+
+void Tissue::add_circulating_tcell(GridCoords coords, TCell tcell) {
+  upcxx::rpc(
+      get_rank_for_grid_point(coords),
+      [](dist_object<list<TCell>> &circulating_tcells, TCell tcell) {
+        circulating_tcells->push_back(tcell);
+      },
+      circulating_tcells, tcell)
+      .wait();
+}
+
+bool Tissue::try_add_tissue_tcell(GridCoords coords, TCell tcell, bool extravasate) {
+  return upcxx::rpc(
+             get_rank_for_grid_point(coords),
+             [](grid_points_t &grid_points, new_active_grid_points_t &new_active_grid_points,
+                GridCoords coords, TCell tcell, bool extravasate) {
+               GridPoint *grid_point = Tissue::get_local_grid_point(grid_points, coords);
+               if (grid_point->tcell) return false;
+               if (extravasate && grid_point->chemokine < _options->min_chemokine) return false;
+               new_active_grid_points->insert({grid_point, true});
+               tcell.moved = true;
+               grid_point->tcell = new TCell(tcell);
+               return true;
+             },
+             grid_points, new_active_grid_points, coords, tcell, extravasate)
+      .wait();
+}
+
+EpiCellStatus Tissue::try_bind_tcell(GridCoords coords) {
+  return upcxx::rpc(
+             get_rank_for_grid_point(coords),
+             [](grid_points_t &grid_points, new_active_grid_points_t &new_active_grid_points_t,
+                GridCoords coords) {
+               GridPoint *grid_point = Tissue::get_local_grid_point(grid_points, coords);
+               if (!grid_point->epicell) return EpiCellStatus::DEAD;
+               if (grid_point->epicell->status == EpiCellStatus::HEALTHY ||
+                   grid_point->epicell->status == EpiCellStatus::DEAD)
+                 return grid_point->epicell->status;
+
+               // if (grid_point->epicell->status == EpiCellStatus::DEAD) return
+               // EpiCellStatus::DEAD;
+
+               double binding_prob = grid_point->epicell->get_binding_prob();
+               if (_rnd_gen->trial_success(binding_prob)) {
+                 auto prev_status = grid_point->epicell->status;
+                 grid_point->epicell->status = EpiCellStatus::APOPTOTIC;
+                 return prev_status;
+               }
+               return EpiCellStatus::DEAD;
+             },
+             grid_points, new_active_grid_points, coords)
+      .wait();
 }
 
 void Tissue::get_samples(vector<SampleData> &samples, int64_t &start_id) {
@@ -489,7 +529,6 @@ void Tissue::get_samples(vector<SampleData> &samples, int64_t &start_id) {
     samples.emplace_back(get_grid_point_sample_data(coords));
   }
 }
-
 
 GridPoint *Tissue::get_first_local_grid_point() {
   grid_point_iter = grid_points->begin();
@@ -525,24 +564,20 @@ void Tissue::set_active(GridPoint *grid_point) {
   new_active_grid_points->insert({grid_point, true});
 }
 
-void Tissue::erase_active(GridPoint *grid_point) {
-  active_grid_points.erase(grid_point);
-}
+void Tissue::erase_active(GridPoint *grid_point) { active_grid_points.erase(grid_point); }
 
 void Tissue::add_new_actives(IntermittentTimer &timer) {
   timer.start();
   DBG("add ", new_active_grid_points->size(), " new active grid points\n");
   for (auto elem : *new_active_grid_points) {
-    //DBG("inserting from new active ", elem.first, " ", elem.first->str(), "\n");
+    // DBG("inserting from new active ", elem.first, " ", elem.first->str(), "\n");
     active_grid_points.insert(elem);
   }
   new_active_grid_points->clear();
   timer.stop();
 }
 
-size_t Tissue::get_num_actives() {
-  return active_grid_points.size();
-}
+size_t Tissue::get_num_actives() { return active_grid_points.size(); }
 
 #ifdef DEBUG
 void Tissue::check_actives(int time_step) {

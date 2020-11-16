@@ -24,12 +24,12 @@ extern shared_ptr<Options> _options;
 using upcxx::rank_me;
 using upcxx::rank_n;
 
-using std::vector;
 using std::array;
 using std::list;
 using std::pair;
 using std::shared_ptr;
 using std::to_string;
+using std::vector;
 
 enum class ViewObject { VIRUS, TCELL_TISSUE, EPICELL, CHEMOKINE };
 
@@ -58,7 +58,10 @@ struct GridCoords {
 
   GridCoords() {}
 
-  GridCoords(int64_t x, int64_t y, int64_t z) : x(x), y(y), z(z) {}
+  GridCoords(int64_t x, int64_t y, int64_t z)
+      : x(x)
+      , y(y)
+      , z(z) {}
 
   // create a grid point from 1d
   GridCoords(int64_t i);
@@ -89,37 +92,40 @@ struct GridCoords {
 struct TCell {
   string id;
   int binding_period = -1;
+  int vascular_time_steps = -1;
+  int tissue_time_steps = -1;
   bool moved = true;
 
-  UPCXX_SERIALIZED_FIELDS(id, binding_period, moved);
+  UPCXX_SERIALIZED_FIELDS(id, binding_period, vascular_time_steps, tissue_time_steps, moved);
 
-  TCell(const string &id) : id(id) {}
+  TCell(const string &id);
 
-  TCell() {}
+  TCell();
 };
 
 enum class EpiCellStatus { HEALTHY, INCUBATING, EXPRESSING, APOPTOTIC, DEAD, ALVEOLI };
-const string EpiCellStatusStr[] = {"HEALTHY", "INCUBATING", "EXPRESSING", "APOPTOTIC", "DEAD" };
+const string EpiCellStatusStr[] = {"HEALTHY", "INCUBATING", "EXPRESSING", "APOPTOTIC", "DEAD"};
 
 class EpiCell {
   int id;
-  int infection_time_step = -1;
-  bool is_expressing = false;
+  int incubation_time_steps = -1;
+  int expressing_time_steps = -1;
+  int apoptotic_time_steps = -1;
 
  public:
   EpiCellStatus status = EpiCellStatus::HEALTHY;
   bool infectable = true;
 
-  EpiCell(int id) : id(id) {};
+  EpiCell(int id);
 
   string str();
 
-  void infect(int time_stamp);
+  void infect();
   bool transition_to_expressing();
   bool apoptosis_death();
   bool infection_death();
   bool is_active();
-  double get_binding_prob(int time_step);
+  double get_binding_prob();
   bool was_expressing();
 };
 
@@ -152,17 +158,16 @@ inline int64_t get_num_grid_points() { return _grid_size->x * _grid_size->y * _g
 
 class Tissue {
  private:
-
   using grid_points_t = upcxx::dist_object<vector<GridPoint>>;
   grid_points_t grid_points;
   vector<GridPoint>::iterator grid_point_iter;
 
   // keeps track of all grid points that need to be updated
-  using new_active_grid_points_t = upcxx::dist_object<HASH_TABLE<GridPoint*, bool>>;
+  using new_active_grid_points_t = upcxx::dist_object<HASH_TABLE<GridPoint *, bool>>;
   new_active_grid_points_t new_active_grid_points;
 
-  HASH_TABLE<GridPoint*, bool> active_grid_points;
-  HASH_TABLE<GridPoint*, bool>::iterator active_grid_point_iter;
+  HASH_TABLE<GridPoint *, bool> active_grid_points;
+  HASH_TABLE<GridPoint *, bool>::iterator active_grid_point_iter;
 
   upcxx::dist_object<list<TCell>> circulating_tcells;
 
@@ -176,13 +181,9 @@ class Tissue {
  public:
   int64_t tcells_generated = 0;
 
-  Tissue() : grid_points({}), new_active_grid_points({}), circulating_tcells({}) {};
+  Tissue(const std::set<int64_t> &airwayEpiCellIds, const std::set<int64_t> &alveoliEpiCellIds);
 
   ~Tissue() {}
-
-  void construct(GridCoords grid_size,
-    const std::set<int64_t> & airwayEpiCellIds,
-    const std::set<int64_t> & alveoliEpiCellIds);
 
   int64_t get_num_local_grid_points();
 
@@ -205,6 +206,8 @@ class Tissue {
 
   bool try_add_tissue_tcell(GridCoords coords, TCell tcell, bool extravasate);
 
+  EpiCellStatus try_bind_tcell(GridCoords coords);
+
   GridPoint *get_first_local_grid_point();
   GridPoint *get_next_local_grid_point();
 
@@ -223,5 +226,4 @@ class Tissue {
 #ifdef DEBUG
   void check_actives(int time_step);
 #endif
-
 };
