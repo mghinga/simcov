@@ -109,7 +109,7 @@ def animate(i):
             #plot_subplot(options.compare_file, ax_virus, [9], 'avg virions per cell', lw=4, alpha=0.3, clear=False, log_scale=False, scale=options.virus_scale)
             plot_subplot(options.compare_file, ax_virus, [8], 'avg virions per cell', lw=4, alpha=0.3, clear=False, log_scale=False, scale=options.virus_scale)
             
-        plot_subplot(options.stats_file, ax_chemo, [8], 'virions')
+        plot_subplot(options.stats_file, ax_chemo, [8], 'virions', log_scale=options.log_scale)
         if options.compare_file != '':
             #plot_subplot(options.compare_file, ax_chemo, [10], 'avg chemokines per cell', lw=4, alpha=0.3, clear=False, log_scale=False, scale=options.chemo_scale)
             plot_subplot(options.compare_file, ax_chemo, [8], 'virions', lw=4, alpha=0.3, clear=False, log_scale=options.log_scale)
