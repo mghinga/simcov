@@ -93,23 +93,23 @@ def animate(i):
         first = False
         
         plot_subplot(options.stats_file, ax_epicells, [1, 2, 3, 4], 'epicells', log_scale=options.log_scale)
-        if options.compare_file != '':
+       # if options.compare_file != '':
             #plot_subplot(options.compare_file, ax_epicells, [2, 3, 5, 4], 'epicells', lw=4, alpha=0.3, clear=False, log_scale=options.log_scale)
-            plot_subplot(options.compare_file, ax_epicells, [1, 2, 3, 4], 'epicells', lw=4, alpha=0.3, clear=False, log_scale=options.log_scale)
+         #   plot_subplot(options.compare_file, ax_epicells, [1, 2, 3, 4], 'epicells', lw=4, alpha=0.3, clear=False, log_scale=options.log_scale)
             
         plot_subplot(options.stats_file, ax_tcells, [6, 5], 'tcells', log_scale=options.log_scale)
-        if options.compare_file != '':
+       # if options.compare_file != '':
             #plot_subplot(options.compare_file, ax_tcells, [6, 7], 'tcells', lw=4, alpha=0.3, clear=False, log_scale=options.log_scale)
-            plot_subplot(options.compare_file, ax_tcells, [6, 5], 'tcells', lw=4, alpha=0.3, clear=False, log_scale=options.log_scale)
+         #   plot_subplot(options.compare_file, ax_tcells, [6, 5], 'tcells', lw=4, alpha=0.3, clear=False, log_scale=options.log_scale)
             
         plot_subplot(options.stats_file, ax_virus, [8], 'avg virions per cell')
-        if options.compare_file != '':
+       # if options.compare_file != '':
             #plot_subplot(options.compare_file, ax_virus, [9], 'avg virions per cell', lw=4, alpha=0.3, clear=False, log_scale=False, scale=options.virus_scale)
-            plot_subplot(options.compare_file, ax_virus, [8], 'avg virions per cell', lw=4, alpha=0.3, clear=False, log_scale=False, scale=options.virus_scale)
+         #   plot_subplot(options.compare_file, ax_virus, [8], 'avg virions per cell', lw=4, alpha=0.3, clear=False, log_scale=False, scale=options.virus_scale)
 
         plot_subplot(options.stats_file, ax_total_virions, [8], 'virions', log_scale=options.log_scale, scale=int(options.dimensions) ** 2)
         if options.compare_file != '':
-            plot_subplot(options.compare_file, ax_total_virions, [8], 'virions', lw=4, alpha=0.3, clear=False, log_scale=options.log_scale, scale=int(options.dimensions) ** 2)
+            plot_subplot(options.compare_file, ax_total_virions, [0], 'virions', lw=4, alpha=0.3, clear=False, log_scale=options.log_scale)
             
     else:
         unchanged += 1
