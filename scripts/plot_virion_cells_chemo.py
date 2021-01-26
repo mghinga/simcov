@@ -51,7 +51,7 @@ moddate = os.stat(options.stats_file)[8]
 unchanged = 0
 first = True
 
-def plot_subplot(fname, ax, columns, title, colors, y_label, fig_title, legend_labels, lw=2, alpha=1.0, clear=True, log_scale=False, scale=1.0, xs=None):
+def plot_subplot(fname, ax, columns, title, colors, y_label, legend_labels, lw=4, alpha=1.0, clear=True, log_scale=False, scale=1.0, xs=None):
     graph_data = open(fname,'r').read()
     lines = graph_data.split('\n')
     get_xs = False
@@ -91,10 +91,9 @@ def plot_subplot(fname, ax, columns, title, colors, y_label, fig_title, legend_l
     else:
         for j in range(len(columns)):
             ax.plot(xs, ys[j], label=labels[j][0:7], lw=lw, alpha=alpha, color=colors[j], zorder=5)
-    if title == 'epicells':        
+    if title == 'epicells' or title == 'tcells':        
         ax.legend(labels=legend_labels, loc='upper left')
     ax.set_xlabel('Time (days)')
-    ax.set_title(fig_title)
     if log_scale:
         ax.set_ylim(bottom=1, top=np.power(10, np.ceil(np.log10(np.max(ys))) + 1))
         ax.set_ylabel((y_label + ' in Log10'))
@@ -117,17 +116,17 @@ def animate(i):
         moddate = new_moddate
         first = False
         
-        simcov_xs, simcov_ys = plot_subplot(options.stats_file, ax_epicells, [1, 2, 3, 4], 'epicells',  ['#ffca4f', '#ff3b05', '#197dff', '#000000'], 'Number of Cells in Each State', 'Cells in Each State Over Time', ['Incubating', 'Expressing', 'Apoptotic', 'Dead'], log_scale=options.log_scale)
+        simcov_xs, simcov_ys = plot_subplot(options.stats_file, ax_epicells, [1, 2, 3, 4], 'epicells',  ['#ffca4f', '#ff3b05', '#197dff', '#000000'], 'Number of Cells in Each State', ['Incubating', 'Expressing', 'Apoptotic', 'Dead'], log_scale=options.log_scale)
         #if options.compare_file != '':
             #plot_subplot(options.compare_file, ax_epicells, [2, 3, 5, 4], 'epicells', lw=4, alpha=0.3, clear=False, log_scale=options.log_scale)
             #compare_xs, compare_ys = plot_subplot(options.compare_file, ax_epicells, [1, 2, 3, 4], 'epicells', lw=4, alpha=0.3, clear=False, log_scale=options.log_scale, scale=options.cell_scale)
             
-        simcov_xs, simcov_ys = plot_subplot(options.stats_file, ax_tcells, [6], 'tcells', ['#009900'], 'Number of T-Cells', 'T-Cells Over Time', ['T-Cells'], log_scale=options.log_scale)
+        simcov_xs, simcov_ys = plot_subplot(options.stats_file, ax_tcells, [6, 5], 'tcells', ['#009900', '#00cc00'], 'Number of T-Cells', ['In Tissue', 'In Vasculature'], log_scale=options.log_scale)
         #if options.compare_file != '':
             #plot_subplot(options.compare_file, ax_tcells, [6, 7], 'tcells', lw=4, alpha=0.3, clear=False, log_scale=options.log_scale)
             #compare_xs, compare_ys = plot_subplot(options.compare_file, ax_tcells, [6, 5], 'tcells', lw=4, alpha=0.3, clear=False, log_scale=options.log_scale)
             
-        simcov_xs, simcov_ys = plot_subplot(options.stats_file, ax_total_virions, [8], 'virions', ['#ff8c00'], 'Number of Virions', 'Virions Over Time', ['Virions'], log_scale=options.log_scale, scale=int(options.dimensions) ** 2)
+        simcov_xs, simcov_ys = plot_subplot(options.stats_file, ax_total_virions, [8], 'virions', ['#ff8c00'], 'Number of Virions', ['Virions'], log_scale=options.log_scale, scale=int(options.dimensions) ** 2)
         #if options.compare_file != '':
         #    compare_xs, compare_ys = plot_subplot(options.compare_file, ax_total_virions, [5], 'virions_compare', lw=4, alpha=0.4, clear=False, log_scale=options.log_scale)
         #if options.patient_data != '':
