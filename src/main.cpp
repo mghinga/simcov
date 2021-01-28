@@ -134,7 +134,7 @@ void seed_infection(Tissue &tissue, int time_step) {
     if (infection_coords[3] == time_step) {
       GridCoords coords({infection_coords[0], infection_coords[1], infection_coords[2]});
 
-      WARN("Time step ", time_step, ":initial infection at ", coords.str());
+      //WARN("Time step ", time_step, ":initial infection at ", coords.str());
 
       DBG("Time step ", time_step, ":initial infection at ", coords.str() + "\n");
       tissue.set_initial_infection(coords.to_1d());
