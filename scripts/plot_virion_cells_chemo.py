@@ -15,11 +15,11 @@ from sklearn.metrics import r2_score
 style.use('fivethirtyeight')
 #style.use('qpaper')
 
-plt.rc('axes', titlesize=12)
-plt.rc('axes', labelsize=10)
-plt.rc('xtick', labelsize=8)
-plt.rc('ytick', labelsize=8)
-plt.rc('legend', fontsize=8)
+plt.rc('axes', titlesize=18)
+plt.rc('axes', labelsize=18)
+plt.rc('xtick', labelsize=18)
+plt.rc('ytick', labelsize=18)
+plt.rc('legend', fontsize=18)
 
 
 argparser = argparse.ArgumentParser()
@@ -41,11 +41,11 @@ options = argparser.parse_args()
 
 #columns = [int(i) for i in options.indexes.split(',')]
 
-fig = plt.figure(figsize=(20, 5))
-ax_epicells = fig.add_subplot(1, 3, 2)
+fig = plt.figure(figsize=(20, 6))
+ax_epicells = fig.add_subplot(1, 3, 1)
 ax_tcells = fig.add_subplot(1, 3, 3)
 #ax_virus = fig.add_subplot(2, 2, 3)
-ax_total_virions = fig.add_subplot(1, 3, 1)
+ax_total_virions = fig.add_subplot(1, 3, 2)
 
 moddate = os.stat(options.stats_file)[8]
 unchanged = 0
