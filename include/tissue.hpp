@@ -32,6 +32,7 @@ using std::to_string;
 using std::vector;
 
 enum class ViewObject { VIRUS, TCELL_TISSUE, EPICELL, CHEMOKINE };
+enum class EpiCellType { NONE, AIRWAY, ALVEOLI };
 
 inline string view_object_str(ViewObject view_object) {
   switch (view_object) {
@@ -68,6 +69,7 @@ struct GridCoords {
 
   // create a random grid point
   GridCoords(shared_ptr<Random> rnd_gen);
+    GridCoords(shared_ptr<Random> rnd_gen, const std::vector<EpiCellType> &lung_cells);
 
   void set_rnd(shared_ptr<Random> rnd_gen);
 
@@ -106,7 +108,6 @@ struct TCell {
 
 enum class EpiCellStatus { HEALTHY = 0, INCUBATING = 1, EXPRESSING = 2, APOPTOTIC = 3, DEAD = 4 };
 const string EpiCellStatusStr[] = {"HEALTHY", "INCUBATING", "EXPRESSING", "APOPTOTIC", "DEAD"};
-enum class EpiCellType { NONE, AIRWAY, ALVEOLI };
 
 class EpiCell {
   int id;
@@ -174,13 +175,14 @@ class Tissue {
   HASH_TABLE<GridPoint *, bool>::iterator active_grid_point_iter;
 
   int64_t num_circulating_tcells;
+  int64_t num_lung_cells;
   upcxx::dist_object<int64_t> tcells_generated;
   std::vector<EpiCellType> lung_cells;
 
   // this is static for ease of use in rpcs
   static GridPoint *get_local_grid_point(grid_points_t &grid_points, int64_t grid_i);
 
-  int load_data_file(const string &fname, int num_grid_points, EpiCellType epicell_type);
+  void load_data_file(const string &fname, int num_grid_points, EpiCellType epicell_type);
   vector<int> get_model_dims(const string &fname);
 
  public:
@@ -230,7 +232,13 @@ class Tissue {
 
   SampleData get_grid_point_sample_data(int64_t grid_i);
 
-  // int64_t get_random_airway_epicell_location();
+  const std::vector<EpiCellType>& get_lung_cells() const {
+    return lung_cells;
+  }
+
+  int64_t get_num_lung_cells() {
+    return num_lung_cells;
+  }
 
 #ifdef DEBUG
   void check_actives(int time_step);

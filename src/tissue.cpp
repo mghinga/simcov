@@ -38,6 +38,25 @@ GridCoords::GridCoords(shared_ptr<Random> rnd_gen) {
   z = rnd_gen->get(0, _grid_size->z);
 }
 
+GridCoords::GridCoords(shared_ptr<Random> rnd_gen, const std::vector<EpiCellType> &lung_cells) {
+  if (!_options->lung_model_dir.empty()) {
+    EpiCellType val = EpiCellType::NONE;
+    int index = 0;
+    while (val == EpiCellType::NONE) {
+      index = rnd_gen->get(0, (_grid_size->x * _grid_size->y * _grid_size->z));
+      val = lung_cells[index];
+    }
+    GridCoords coords(index);
+    x = coords.x;
+    y = coords.y;
+    z = coords.z;
+  } else {
+    x = rnd_gen->get(0, _grid_size->x);
+    y = rnd_gen->get(0, _grid_size->y);
+    z = rnd_gen->get(0, _grid_size->z);
+  }
+}
+
 int64_t GridCoords::to_1d(int x, int y, int z) {
   if (x >= _grid_size->x || y >= _grid_size->y || z >= _grid_size->z)
     DIE("Grid point is out of range: ", x, " ", y, " ", z, " max size ", _grid_size->str());
@@ -269,18 +288,17 @@ Tissue::Tissue()
   auto mem_reqd = sz_grid_point * blocks_per_rank * _grid_blocks.block_size;
   SLOG("Total initial memory required per process is at least ", get_size_str(mem_reqd),
        " with each grid point requiring on average ", sz_grid_point, " bytes\n");
-  int64_t num_lung_cells = 0;
+  num_lung_cells = 0;
   if (!_options->lung_model_dir.empty()) {
     lung_cells.resize(num_grid_points, EpiCellType::NONE);
     Timer t_load_lung_model("load lung model");
     t_load_lung_model.start();
     // Read alveolus epithileal cells
-    num_lung_cells += load_data_file(_options->lung_model_dir + "/alveolus.dat", num_grid_points,
+    load_data_file(_options->lung_model_dir + "/alveolus.dat", num_grid_points,
                                      EpiCellType::ALVEOLI);
     // Read bronchiole epithileal cells
-    num_lung_cells += load_data_file(_options->lung_model_dir + "/bronchiole.dat", num_grid_points,
+    load_data_file(_options->lung_model_dir + "/bronchiole.dat", num_grid_points,
                                      EpiCellType::AIRWAY);
-
     t_load_lung_model.stop();
     SLOG("Lung model loaded ", num_lung_cells, " epithileal cells in ", fixed, setprecision(2),
          t_load_lung_model.get_elapsed(), " s\n");
@@ -326,7 +344,7 @@ Tissue::Tissue()
   barrier();
 }
 
-int Tissue::load_data_file(const string &fname, int num_grid_points, EpiCellType epicell_type) {
+void Tissue::load_data_file(const string &fname, int num_grid_points, EpiCellType epicell_type) {
   ifstream f(fname, ios::in | ios::binary);
   if (!f) SDIE("Couldn't open file ", fname);
   f.seekg(0, ios::end);
@@ -338,7 +356,6 @@ int Tissue::load_data_file(const string &fname, int num_grid_points, EpiCellType
   vector<int> id_buf(num_ids);
   if (!f.read(reinterpret_cast<char *>(&(id_buf[0])), fsize))
     DIE("Couldn't read all bytes in ", fname);
-  int num_lung_cells = 0;
   // skip first three wwhich are dimensions
   for (int i = 3; i < id_buf.size(); i++) {
     auto id = id_buf[i];
@@ -349,7 +366,6 @@ int Tissue::load_data_file(const string &fname, int num_grid_points, EpiCellType
     num_lung_cells++;
   }
   f.close();
-  return num_lung_cells;
 }
 
 intrank_t Tissue::get_rank_for_grid_point(int64_t grid_i) {
@@ -411,14 +427,6 @@ vector<int64_t> *Tissue::get_neighbors(GridCoords c) {
 }
 
 int64_t Tissue::get_num_local_grid_points() { return grid_points->size(); }
-
-/*
-int64_t Tissue::get_random_airway_epicell_location() {
-  std::set<int>::iterator it = airway.begin();
-  std::advance(it, airway.size() / 2);
-  return *it;
-}
-*/
 
 bool Tissue::set_initial_infection(int64_t grid_i) {
   return rpc(

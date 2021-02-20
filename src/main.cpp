@@ -132,19 +132,10 @@ void seed_infection(Tissue &tissue, int time_step) {
   for (auto it = _options->infection_coords.begin(); it != _options->infection_coords.end(); it++) {
     auto infection_coords = *it;
     if (infection_coords[3] == time_step) {
-      /*
-      if (!_options->lung_model_dir.empty()) {
-        GridCoords coords(tissue.get_random_airway_epicell_location());
-        WARN("Time step ", time_step, ":initial infection at ", coords.str());
-        DBG("Time step ", time_step, ":initial infection at ", coords.str() + "\n");
-        tissue.set_initial_infection(coords.to_1d());
-      } else {
-        */
       GridCoords coords({infection_coords[0], infection_coords[1], infection_coords[2]});
       WARN("Time step ", time_step, ":initial infection at ", coords.str());
       DBG("Time step ", time_step, ":initial infection at ", coords.str() + "\n");
       tissue.set_initial_infection(coords.to_1d());
-      //}
       _options->infection_coords.erase(it--);
     }
   }
@@ -190,7 +181,7 @@ void update_circulating_tcells(int time_step, Tissue &tissue, double extravasate
   if (_rnd_gen->trial_success(portion_xtravasing - num_xtravasing)) num_xtravasing++;
   for (int i = 0; i < num_xtravasing; i++) {
     progress();
-    GridCoords coords(_rnd_gen);
+    GridCoords coords(_rnd_gen, tissue.get_lung_cells());
     if (tissue.try_add_new_tissue_tcell(coords.to_1d())) {
       _sim_stats.tcells_tissue++;
       DBG(time_step, " tcell extravasates at ", coords.str(), "\n");
@@ -654,6 +645,10 @@ void run_sim(Tissue &tissue) {
                               (int64_t)_options->whole_lung_dims[2];
   auto sim_volume = _grid_size->x * _grid_size->y * _grid_size->z;
   double extravasate_fraction = (double)sim_volume / whole_lung_volume;
+  if (!_options->lung_model_dir.empty()) {
+    //TODO lungmodel needs to include a whole lung volume value in output
+    extravasate_fraction = (double)tissue.get_num_lung_cells() / 963072682771.0;
+  }
   SLOG("Fraction of circulating T cells extravasating is ", extravasate_fraction, "\n");
   SLOG("# datetime                    step    ", _sim_stats.header(STATS_COL_WIDTH),
        "<%active  lbln>\n");
