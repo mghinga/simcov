@@ -33,6 +33,26 @@ include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
 include(GetGitVersion)
 
+### Kirtus: Set up CUDA
+include(CheckLanguage)
+check_language(CUDA)
+if(CMAKE_CUDA_COMPILER)
+    option(ENABLE_CUDA "Enable CUDA" ON)
+    if (ENABLE_CUDA)
+      SET(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+      SET(CMAKE_CUDA_RESOLVE_DEVICE_SYMBOLS OFF) # only build device link objects for GPU targets
+      enable_language(CUDA)
+    endif()
+else()
+    message(STATUS "No CUDA environment detected")
+    set(ENABLE_CUDA OFF CACHE BOOL "Enable CUDA" FORCE)
+endif()
+if(ENABLE_CUDA)
+  message(STATUS "Building for GPU with CUDA")
+else()
+  message(STATUS "Building for CPU only")
+endif()
+
 
 # all c++ must be at least c++17
 set(CMAKE_CXX_STANDARD 17)

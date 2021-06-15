@@ -15,6 +15,17 @@ endif()
 
 message("Building ${CMAKE_BUILD_TYPE} version")
 
+### Kirtus: cude enabled?
+if(ENABLE_CUDA)
+    add_definitions(-DENABLE_GPUS)
+    message(STATUS "Building for GPUs with CUDA")
+endif()
+
+### Kirtus: link GPU code
+if(ENABLE_CUDA)
+	include_directories("tissue_gpu")
+endif()
+
 find_package(Threads REQUIRED)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-reorder -Wno-sign-compare -Wno-unused-function -Wno-catch-value -pthread")
@@ -30,7 +41,11 @@ endforeach()
 
 add_definitions(-DALL_DEFNS=\"${all_defs}\")
 
-add_executable(simcov main.cpp tissue.cpp utils.cpp)
+if(ENABLE_CUDA)
+	add_executable(simcov main.cpp ${PROJECT_SOURCE_DIR}/src/tissue_gpu/tissue_gpu.cpp utils.cpp)
+else()
+	add_executable(simcov main.cpp tissue.cpp utils.cpp)
+endif()
 
 target_link_libraries(simcov Threads::Threads ${UPCXX_LIBRARIES} ${UPCXX_UTILS_LIBRARIES} SIMCOV_VERSION_LIB)
 
