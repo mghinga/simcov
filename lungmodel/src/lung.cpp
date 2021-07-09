@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <set>
+#include <unordered_set>
 #include <vector>
 #include <algorithm>
 #include <cassert>
@@ -13,24 +13,35 @@
 #include <inttypes.h>
 
 class Random {
-    
 private:
     std::mt19937_64 generator;
     std::uniform_int_distribution<int32_t> distribution;
-    
 public:
+    static constexpr double deg2rad = M_PI / 180;
     Random(unsigned seed, int32_t minv, int32_t maxv)
         : generator(seed), distribution(minv, maxv) {}
     double get() {
         return distribution(generator) * deg2rad;
     }
-
 };
 
 struct Level {
     int32_t L = 0, r = 0, count = 0;
     double bAngle = 0.0, gAngle = 0.0;
 };
+
+// Model variables
+const double twoPi = M_PI * 2;
+const double cylinderRadialIncrement = M_PI / 2;
+const int idim = 20;
+const int idim2 = 2 * idim;
+const int idim3 = idim2 - 1;
+double yaxis[3] = { 0.0, 1.0, 0.0 };
+double zaxis[3] = { 0.0, 0.0, 1.0 };
+std::vector<Level> levels;
+std::shared_ptr<Random> rnd_gen = std::make_shared<Random>(753695190, 0, 179);
+time_t startProgram, endProgram, startFunction, endFunction;
+double timeProgram = 0.0, timeFunction = 0.0;
 
 // Input parameters
 int32_t gridSize[3] = {0}; // Simulation space size
@@ -42,16 +53,6 @@ int64_t numAlveoli = 0, numAlveoliCells = 0;
 int64_t numIntersectCells = 0;
 int32_t minx = 0, maxx = 0, miny = 0, maxy = 0, minz = 0, maxz = 0;
 std::unordered_set<int64_t> epiCellPositions1D;
-
-// Model variables
-const double deg2rad = M_PI / 180;
-const double twoPi = M_PI * 2;
-const double cylinderRadialIncrement = M_PI / 2;
-const int idim = 20;
-const int idim2 = 2 * idim;
-const int idim3 = idim2 - 1;
-std::vector<Level> levels;
-std::shared_ptr<Random> rnd_gen = std::make_shared<Random>(753695190, 0, 179);
 
 void rotate(int32_t (&vec)[3], const double (&axis)[3], double angle) {
     /**
@@ -99,19 +100,13 @@ void addPosition(int32_t x,
     double bAngle,
     double rotateZ,
     int64_t& numCells) {
-#ifdef SLM_COMPUTE_POSIITONS
     // Treat as positional vectors and apply rotations and translate y
     int32_t position[3] = { x, y, z };
-    rotate(position, { 0.0, 1.0, 0.0 }, bAngle);
-    rotate(position, { 0.0, 0.0, 1.0 }, rotateZ);
+    rotate(position, yaxis, bAngle);
+    rotate(position, zaxis, rotateZ);
     position[0] += pos[0];
     position[1] += pos[1];
     position[2] += pos[2];
-#endif
-#ifdef SLM_COMPUTE_BOUNDS
-    // Compute model min max dimension boundaries
-    setModelBounds(position);
-#endif 
 #ifdef SLM_WRITE_TO_FILE
     // Verify new location is within grid
     if (position[0] < gridOffset[0] ||//TODO optimize for production
@@ -123,14 +118,14 @@ void addPosition(int32_t x,
         return;
     }
 #endif
-#ifdef SLM_RECORD_POSITIONS
+    // Compute model min max dimension boundaries
+    setModelBounds(position);
     // Record new location and if the cell intersects another
     auto success = epiCellPositions1D.insert(position[0] + position[1]
         * gridSize[0] + position[2] * gridSize[0] * gridSize[1]);
     if (!success.second) {
         numIntersectCells++;
     }
-#endif
     // Increment total cell count
     numCells++;
 }
@@ -144,7 +139,7 @@ void constructAlveoli(const int32_t (&pos)[3], double bAngle, double rotateZ) {
                     || x == idim
                     || y == -idim // Cells in the y planes
                     || y == idim
-                    || (z == idim3) { // Cells in z alveolar bottom
+                    || z == idim3) { // Cells in z alveolar bottom
                     addPosition(x,
                         y,
                         z,
@@ -165,8 +160,9 @@ void constructSegment(const int32_t (&root)[3],
     bool isTerminal,
     int32_t (&newRoot)[3]) {
     // Build cylinder at origin along y-axis
+    time(&startFunction);
     for (int32_t z = 0; z <= level.L; z++) {
-        for (double az = 0; az < twoPi; az += deg2rad) {
+        for (double az = 0; az < twoPi; az += Random::deg2rad) {
             int32_t x = (int32_t)round(level.r
                 * sin(cylinderRadialIncrement)
                 * cos(az));
@@ -178,8 +174,8 @@ void constructSegment(const int32_t (&root)[3],
     }
     // Create root for next generation
     int32_t base[3] = {0, 0, level.L};
-    rotate(base, {0.0, 1.0, 0.0}, level.bAngle);
-    rotate(base, {0.0, 0.0, 1.0}, rotateZ);
+    rotate(base, yaxis, level.bAngle);
+    rotate(base, zaxis, rotateZ);
     newRoot[0] = root[0] + base[0];
     newRoot[1] = root[1] + base[1];
     newRoot[2] = root[2] + base[2];
@@ -188,6 +184,8 @@ void constructSegment(const int32_t (&root)[3],
     if (isTerminal) {
         constructAlveoli(newRoot, level.bAngle, rotateZ);
     }
+    time(&endFunction);
+    timeFunction += double(endFunction - startFunction);
 }
 
 void construct(const int32_t (&root)[3],
@@ -242,9 +240,9 @@ void loadEstimatedParameters() {
             lstream >> tempD;
             e.r = (int32_t)(round(scale * tempD) / 2);
             lstream >> tempI;
-            e.bAngle = tempI * deg2rad;
+            e.bAngle = tempI * Random::deg2rad;
             lstream >> tempI;
-            e.gAngle = tempI * deg2rad;
+            e.gAngle = tempI * Random::deg2rad;
             if (levels.size() > 73) {  // Negate for left lobe data
                 e.bAngle *= -1.0;
             }
@@ -260,6 +258,8 @@ void loadEstimatedParameters() {
 void reset() {
     minx = maxx = miny = maxy = minz = maxz = 0;
     numIntersectCells = 0;
+    numAlveoli = numAlveoliCells = 0;
+    numAirways = numAirwayCells = 0;
     epiCellPositions1D.clear();
 }
 
@@ -275,6 +275,7 @@ int main(int argc, char *argv[]) {
     gridOffset[0] = atoi(argv[4]);
     gridOffset[1] = atoi(argv[5]);
     gridOffset[2] = atoi(argv[6]);
+    time(&startProgram);
     loadEstimatedParameters();
     /**
     * Starting at root and recursively build tree
@@ -288,11 +289,14 @@ int main(int argc, char *argv[]) {
     * lower left, 25, 98
     */
     std::ofstream ofs;
-    int generations[] = { 24, 24, 26, 24, 25 };
-    int startIndex[] = { 0, 24, 48, 74, 98 };
+    int generations[] = { 16 };//TODO 24, 24, 26, 24, 25};
+    int startIndex[] = { 0 };//TODO 24, 48, 74, 98};
     int32_t base[] = { 12628, 10516, 0 }; // Base of btree at roundUp(bounds/2)
-    for (int i = 0; i < 5; i++) {
-        std::fprintf(stderr, "Processing lobe %d", i);
+    for (int i = 0; i < 1; i++) {//TODO 5; i++) {
+        std::fprintf(stderr,
+            "Processing lobe %d generations %d\n",
+            i,
+            generations[i]);
         Level lvl = levels.at(startIndex[i]);
         int32_t root[3] = { 0, 0, 0 };
         constructSegment(base, lvl, 0.0, false, root);
@@ -303,13 +307,17 @@ int main(int argc, char *argv[]) {
             lvl.bAngle,
             0.0);
         // Print stats
-        std::fprintf(stderr, "Alveolars " "%" PRId64 " cells " "%" PRId64 "\n", numAlveoli, numAlveoliCells);
-        std::fprintf(stderr, "Airways " "%" PRId64 " cells " "%" PRId64 "\n", numAirways, numAirwayCells);
-        std::fprintf(stderr, "Total cells " "%" PRId64 "\n", numAlveoliCells + numAirwayCells);
-        numAlveoli = numAlveoliCells = numAirways = numAirwayCells = 0;
-#ifdef SLM_COMPUTE_BOUNDS
-        std::fprintf(stderr, "%d %d %d %d %d %d\n", minx, maxx, miny, maxy, minz, maxz);
-#endif
+        std::fprintf(stderr,
+            "Alveolars " "%" PRId64 " cells " "%" PRId64 "\n",
+            numAlveoli,
+            numAlveoliCells);
+        std::fprintf(stderr,
+            "Airways " "%" PRId64 " cells " "%" PRId64 "\n",
+            numAirways,
+            numAirwayCells);
+        std::fprintf(stderr,
+            "Total cells " "%" PRId64 "\n",
+            numAlveoliCells + numAirwayCells);
 #ifdef SLM_WRITE_TO_FILE
         ofs.open("airway.csv", std::ofstream::out | std::ofstream::app);
         if (!ofs.is_open()) {
@@ -322,11 +330,23 @@ int main(int argc, char *argv[]) {
         std::fprintf(stderr, "Bytes written %ld\n", (long)ofs.tellp());
         ofs.close();
 #endif
-#ifdef SLM_RECORD_POSITIONS
-        std::fprintf(stderr, "Cells intersecting " "%" PRId64 "\n", numIntersectCells);
-        std::fprintf(stderr, "Recorded cells " "%" PRId64 "\n", epiCellPositions1D.size());
-#endif
+        std::fprintf(stderr,
+            "%d %d %d %d %d %d\n",
+            minx, maxx, miny, maxy, minz, maxz);
+        std::fprintf(stderr,
+            "Cells intersecting " "%" PRId64 "\n",
+            numIntersectCells);
+        std::fprintf(stderr,
+            "Recorded cells " "%" PRId64 "\n",
+            epiCellPositions1D.size());
         reset();
     }
+    time(&endProgram);
+    // Print timing
+    timeProgram = double(endProgram - startProgram);
+    std::fprintf(stderr,
+        "Total time %g Time in function %g\n",
+        timeProgram,
+        timeFunction);
     return 0;
 }
