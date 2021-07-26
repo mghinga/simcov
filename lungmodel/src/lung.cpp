@@ -1,3 +1,6 @@
+// LungModel
+//
+// Akil Andrews, UNM May 2020
 
 #include <random>
 #include <iostream>
@@ -5,12 +8,17 @@
 #include <sstream>
 #include <unordered_set>
 #include <vector>
+#include <stack>
 #include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <memory>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <chrono>
+#include <omp.h>
+
+#define NOW std::chrono::high_resolution_clock::now
 
 class Random {
 private:
@@ -30,6 +38,23 @@ struct Level {
     double bAngle = 0.0, gAngle = 0.0;
 };
 
+struct Branch {
+    int32_t root[3];
+    int iteration, index, end;
+    double previousBranchAngle, previousRotAngle;
+    Branch(int32_t *root,
+        int iteration,
+        int index,
+        int previousBranchAngle,
+        int previousRotAngle) :
+        iteration(iteration),
+        index(index),
+        previousBranchAngle(previousBranchAngle),
+        previousRotAngle(previousRotAngle) {
+        std::copy(root, root + 3, this->root);
+    }
+};
+
 // Model variables
 const double twoPi = M_PI * 2;
 const double cylinderRadialIncrement = M_PI / 2;
@@ -39,20 +64,19 @@ const int idim3 = idim2 - 1;
 double yaxis[3] = { 0.0, 1.0, 0.0 };
 double zaxis[3] = { 0.0, 0.0, 1.0 };
 std::vector<Level> levels;
+std::stack<Branch> branches;
 std::shared_ptr<Random> rnd_gen = std::make_shared<Random>(753695190, 0, 179);
-time_t startProgram, endProgram, startFunction, endFunction;
-double timeProgram = 0.0, timeFunction = 0.0;
 
 // Input parameters
 int32_t gridSize[3] = {0}; // Simulation space size
 int32_t gridOffset[3] = {0}; // Position of simulation space in model
 
 // Output variables
-int64_t numAirways = 0, numAirwayCells = 0;
-int64_t numAlveoli = 0, numAlveoliCells = 0;
-int64_t numIntersectCells = 0;
+int64_t numAirways = 0, numAlveoli = 0;
+int64_t numCells = 0, numIntersectCells = 0;
 int32_t minx = 0, maxx = 0, miny = 0, maxy = 0, minz = 0, maxz = 0;
-std::unordered_set<int64_t> epiCellPositions1D;
+std::unordered_set<int64_t> results;
+std::vector<int64_t> epiCellPositions1D;
 
 void rotate(int32_t (&vec)[3], const double (&axis)[3], double angle) {
     /**
@@ -93,13 +117,12 @@ void setModelBounds(const int32_t(&pos)[3]) {
     }
 }
 
-void addPosition(int32_t x,
+int32_t addPosition(int32_t x,
     int32_t y,
     int32_t z,
     const int32_t(&pos)[3],
     double bAngle,
-    double rotateZ,
-    int64_t& numCells) {
+    double rotateZ) {
     // Treat as positional vectors and apply rotations and translate y
     int32_t position[3] = { x, y, z };
     rotate(position, yaxis, bAngle);
@@ -118,20 +141,22 @@ void addPosition(int32_t x,
         return;
     }
 #endif
-    // Compute model min max dimension boundaries
-    setModelBounds(position);
-    // Record new location and if the cell intersects another
-    auto success = epiCellPositions1D.insert(position[0] + position[1]
-        * gridSize[0] + position[2] * gridSize[0] * gridSize[1]);
-    if (!success.second) {
-        numIntersectCells++;
+#pragma omp critical
+    {
+        // Compute model min max dimension boundaries
+        setModelBounds(position);//TODO maybe reduce?
     }
-    // Increment total cell count
-    numCells++;
+    // Return new location in 1D
+    return (position[0] + position[1]
+        * gridSize[0] + position[2] * gridSize[0] * gridSize[1]);
 }
 
-void constructAlveoli(const int32_t (&pos)[3], double bAngle, double rotateZ) {
+void constructAlveoli(const int32_t (&pos)[3],
+    double bAngle,
+    double rotateZ,
+    std::vector<int64_t>& positions) {
     // Single alveolar volume 200x200x200 um, 40x40x40 units, [-20, 20]
+    int64_t newPos;
     for (int32_t x = -idim; x <= idim; x++) {
         for (int32_t y = -idim; y <= idim; y++) {
             for (int32_t z = 0; z < idim2; z++) {
@@ -140,83 +165,51 @@ void constructAlveoli(const int32_t (&pos)[3], double bAngle, double rotateZ) {
                     || y == -idim // Cells in the y planes
                     || y == idim
                     || z == idim3) { // Cells in z alveolar bottom
-                    addPosition(x,
+                    newPos = addPosition(x,
                         y,
                         z,
                         pos,
                         bAngle,
-                        rotateZ,
-                        numAlveoliCells);
+                        rotateZ);
+                    positions.push_back(newPos);
                 }
             }
         }
     }
-    numAlveoli++;
+#pragma omp critical
+    {
+        numAlveoli++;
+    }
 }
 
 void constructSegment(const int32_t (&root)[3],
+    const int32_t(&newRoot)[3],
     const Level &level,
     double rotateZ,
     bool isTerminal,
-    int32_t (&newRoot)[3]) {
+    std::vector<int64_t> &positions) {
     // Build cylinder at origin along y-axis
-    time(&startFunction);
+    int32_t x, y, newPos;
     for (int32_t z = 0; z <= level.L; z++) {
         for (double az = 0; az < twoPi; az += Random::deg2rad) {
-            int32_t x = (int32_t)round(level.r
+            x = (int32_t)round(level.r
                 * sin(cylinderRadialIncrement)
                 * cos(az));
-            int32_t y = (int32_t)round(level.r
+            y = (int32_t)round(level.r
                 * sin(cylinderRadialIncrement)
                 * sin(az));
-            addPosition(x, y, z, root, level.bAngle, rotateZ, numAirwayCells);
+            newPos = addPosition(x, y, z, root, level.bAngle, rotateZ);
+            positions.push_back(newPos);
         }
     }
-    // Create root for next generation
-    int32_t base[3] = {0, 0, level.L};
-    rotate(base, yaxis, level.bAngle);
-    rotate(base, zaxis, rotateZ);
-    newRoot[0] = root[0] + base[0];
-    newRoot[1] = root[1] + base[1];
-    newRoot[2] = root[2] + base[2];
-    numAirways++;
+#pragma omp critical
+    {
+        numAirways++;
+    }
     // Draw alveolus at each terminal airway
     if (isTerminal) {
-        constructAlveoli(newRoot, level.bAngle, rotateZ);
+        constructAlveoli(newRoot, level.bAngle, rotateZ, positions);
     }
-    time(&endFunction);
-    timeFunction += double(endFunction - startFunction);
-}
-
-void construct(const int32_t (&root)[3],
-    int iteration,
-    int index,
-    int end,
-    double previousBranchAngle,
-    double previousRotAngle) {
-    if (iteration > end) {
-        return;
-    }
-    bool isTerminal = (iteration == end) ? true : false;
-    // Uniform randomly rotate each branch
-    double rotateZ = (iteration >= 2) ? rnd_gen->get() : 0.0;
-    rotateZ = previousRotAngle - rotateZ;
-    // Draw left child bronchiole
-    Level lvl = levels.at(index);
-    lvl.bAngle = previousBranchAngle - lvl.bAngle;
-    int32_t lchild[3] = { 0, 0, 0 };
-    constructSegment(root, lvl, rotateZ, isTerminal, lchild);
-    construct(lchild, iteration + 1, index + 1, end, lvl.bAngle, rotateZ);
-    // Uniform randomly rotate each branch
-    rotateZ = (iteration >= 2) ? rnd_gen->get() : 0.0;
-    rotateZ = previousRotAngle + rotateZ;
-    // Draw right child bronchiole
-    lvl = levels.at(index);
-    lvl.bAngle = previousBranchAngle + lvl.bAngle;
-    lvl.gAngle = -lvl.gAngle;
-    int32_t rchild[3] = { 0, 0, 0 };
-    constructSegment(root, lvl, rotateZ, isTerminal, rchild);
-    construct(rchild, iteration + 1, index + 1, end, lvl.bAngle, rotateZ);
 }
 
 void loadEstimatedParameters() {
@@ -253,14 +246,56 @@ void loadEstimatedParameters() {
     } else {
         std::fprintf(stderr, "Failed to open table.txt\n");
     }
+    /*TODO
+    Computer the average number of alveoli per sac
+    alveolusPerSac
+    24, 0
+    24, 24
+    26, 48
+    24, 74
+    25, 98
+    -- , 123
+     */
+
 }
 
-void reset() {
-    minx = maxx = miny = maxy = minz = maxz = 0;
-    numIntersectCells = 0;
-    numAlveoli = numAlveoliCells = 0;
-    numAirways = numAirwayCells = 0;
-    epiCellPositions1D.clear();
+void print() {
+    std::fprintf(stderr,
+        "Airways " "%" PRId64 " Alveolus " "%" PRId64 "\n",
+        numAirways,
+        numAlveoli);
+#ifdef SLM_WRITE_TO_FILE
+    std::ofstream ofs;
+    ofs.open("airway.csv", std::ofstream::out | std::ofstream::app);
+    if (!ofs.is_open()) {
+        std::fprintf(stderr, "Could not create file");
+        exit(1);
+    }
+    for (const int64_t& a : epiCellPositions1D) {
+        ofs << a << std::endl;
+    }
+    std::fprintf(stderr, "Bytes written %ld\n", (long)ofs.tellp());
+    ofs.close();
+#endif
+    std::fprintf(stderr,
+        "%d %d %d %d %d %d\n",
+        minx, maxx, miny, maxy, minz, maxz);
+    std::fprintf(stderr,
+        "Cells intersecting " "%" PRId64 " total cells " "%" PRId64 "\n",
+        numIntersectCells,
+        numCells);
+}
+
+void reduce() {
+    // Merge all positions into unordered set
+    for (int i = 0; i < epiCellPositions1D.size(); i++) {
+        // Record location and if the cell intersects another
+        auto success = results.insert(epiCellPositions1D[i]);
+        if (!success.second) {
+            numIntersectCells++;
+        }
+        numCells++;
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -275,10 +310,9 @@ int main(int argc, char *argv[]) {
     gridOffset[0] = atoi(argv[4]);
     gridOffset[1] = atoi(argv[5]);
     gridOffset[2] = atoi(argv[6]);
-    time(&startProgram);
     loadEstimatedParameters();
     /**
-    * Starting at root and recursively build tree
+    * Starting at root and preorder iteratively build tree
     * 
     * lung lobe, num gen to model, starting row in table.txt
     * ******************************************************
@@ -287,66 +321,133 @@ int main(int argc, char *argv[]) {
     * lower right, 26, 48
     * upper left, 24, 74
     * lower left, 25, 98
+    * 
+    * Note* last generations are alveolus
     */
-    std::ofstream ofs;
-    int generations[] = { 16 };//TODO 24, 24, 26, 24, 25};
-    int startIndex[] = { 0 };//TODO 24, 48, 74, 98};
+    int generations[] = { 24, 24, 26, 24, 25 };
+    int startIndex[] = { 0, 24, 48, 74, 98 };
     int32_t base[] = { 12628, 10516, 0 }; // Base of btree at roundUp(bounds/2)
     for (int i = 0; i < 1; i++) {//TODO 5; i++) {
         std::fprintf(stderr,
             "Processing lobe %d generations %d\n",
             i,
             generations[i]);
-        Level lvl = levels.at(startIndex[i]);
-        int32_t root[3] = { 0, 0, 0 };
-        constructSegment(base, lvl, 0.0, false, root);
-        construct(root,
-            1,
-            startIndex[i] + 1,
-            generations[i] - 1,
-            lvl.bAngle,
-            0.0);
-        // Print stats
-        std::fprintf(stderr,
-            "Alveolars " "%" PRId64 " cells " "%" PRId64 "\n",
-            numAlveoli,
-            numAlveoliCells);
-        std::fprintf(stderr,
-            "Airways " "%" PRId64 " cells " "%" PRId64 "\n",
-            numAirways,
-            numAirwayCells);
-        std::fprintf(stderr,
-            "Total cells " "%" PRId64 "\n",
-            numAlveoliCells + numAirwayCells);
-#ifdef SLM_WRITE_TO_FILE
-        ofs.open("airway.csv", std::ofstream::out | std::ofstream::app);
-        if (!ofs.is_open()) {
-            std::fprintf(stderr, "Could not create file");
-            exit(1);
-        }
-        for (const int64_t& a : epiCellPositions1D) {
-            ofs << a << std::endl;
-        }
-        std::fprintf(stderr, "Bytes written %ld\n", (long)ofs.tellp());
-        ofs.close();
-#endif
-        std::fprintf(stderr,
-            "%d %d %d %d %d %d\n",
-            minx, maxx, miny, maxy, minz, maxz);
-        std::fprintf(stderr,
-            "Cells intersecting " "%" PRId64 "\n",
-            numIntersectCells);
-        std::fprintf(stderr,
-            "Recorded cells " "%" PRId64 "\n",
-            epiCellPositions1D.size());
-        reset();
+        auto start = NOW();
+#pragma omp parallel
+        {
+#pragma omp single
+            {
+                // Create root for next generation
+                Level lvl = levels.at(startIndex[i]);
+                rotate(base, yaxis, lvl.bAngle);
+                rotate(base, zaxis, 0.0);
+                int32_t root[3] = { 0, 0, 0 };
+                root[0] = root[0] + base[0];
+                root[1] = root[1] + base[1];
+                root[2] = root[2] + base[2];
+                {
+                    std::vector<int64_t> positions;
+                    constructSegment(base, root, lvl, 0.0, false, positions);
+                    epiCellPositions1D.insert(epiCellPositions1D.end(),
+                        positions.begin(),
+                        positions.end());
+                }
+                branches.push(Branch(root,
+                    1,
+                    startIndex[i] + 1,
+                    lvl.bAngle,
+                    0.0));
+                int lastGeneration = generations[i] - 2; // -1 for array indexing, -1 since last gen=alveolus
+#pragma omp task untied // Thread switching for starvation
+                {
+                    while (!branches.empty()) {
+                        Branch branch = branches.top();
+                        branches.pop();
+                        if (branch.iteration <= lastGeneration) {
+                            // Determine if this is a terminal bronchiole
+                            bool isTerminal = (branch.iteration == lastGeneration) ? true : false;
+                            // Uniform randomly rotate branch
+                            double rotateZ = (branch.iteration >= 2) ? rnd_gen->get() : 0.0;
+                            rotateZ = branch.previousRotAngle + rotateZ;
+                            // Draw right child bronchiole
+                            Level lvl = levels.at(branch.index);
+                            lvl.bAngle = branch.previousBranchAngle + lvl.bAngle;
+                            lvl.gAngle = -lvl.gAngle;
+                            // Create root for next generation
+                            int32_t base[3] = { 0, 0, lvl.L };
+                            rotate(base, yaxis, lvl.bAngle);
+                            rotate(base, zaxis, rotateZ);
+                            int32_t rchild[3] = { 0, 0, 0 };
+                            rchild[0] = branch.root[0] + base[0];
+                            rchild[1] = branch.root[1] + base[1];
+                            rchild[2] = branch.root[2] + base[2];
+#pragma omp task
+                            {
+                                std::vector<int64_t> positions;
+                                constructSegment(branch.root,
+                                    rchild,
+                                    lvl,
+                                    rotateZ,
+                                    isTerminal,
+                                    positions);
+#pragma omp critical
+                                {
+                                    epiCellPositions1D.insert(epiCellPositions1D.end(),
+                                        positions.begin(),
+                                        positions.end());
+                                }
+                            }
+                            // Push right child to stack first for preorder
+                            branches.push(Branch(rchild,
+                                branch.iteration + 1,
+                                branch.index + 1,
+                                lvl.bAngle,
+                                rotateZ));
+                            // Uniform randomly rotate branch
+                            rotateZ = (branch.iteration >= 2) ? rnd_gen->get() : 0.0;
+                            rotateZ = branch.previousRotAngle - rotateZ;
+                            // Draw left child bronchiole
+                            lvl = levels.at(branch.index);
+                            lvl.bAngle = branch.previousBranchAngle - lvl.bAngle;
+                            // Create root for next generation
+                            rotate(base, yaxis, lvl.bAngle);
+                            rotate(base, zaxis, rotateZ);
+                            int32_t lchild[3] = { 0, 0, 0 };
+                            lchild[0] = branch.root[0] + base[0];
+                            lchild[1] = branch.root[1] + base[1];
+                            lchild[2] = branch.root[2] + base[2];
+#pragma omp task
+                            {
+                                std::vector<int64_t> positions;
+                                constructSegment(branch.root,
+                                    lchild,
+                                    lvl,
+                                    rotateZ,
+                                    isTerminal,
+                                    positions);
+#pragma omp critical
+                                {
+                                    epiCellPositions1D.insert(epiCellPositions1D.end(),
+                                        positions.begin(),
+                                        positions.end());
+                                }
+                            }
+                            // Push left child to stack
+                            branches.push(Branch(lchild,
+                                branch.iteration + 1,
+                                branch.index + 1,
+                                lvl.bAngle,
+                                rotateZ));
+                        }
+                    } // end while
+                } // end main task
+#pragma omp taskwait
+            } // end single
+        } // end parallel
+        std::chrono::duration<double> t_elapsed = NOW() - start;
+        std::fprintf(stderr, "%d total time %g\n", i, t_elapsed.count());
+        reduce();
+        print();
     }
-    time(&endProgram);
-    // Print timing
-    timeProgram = double(endProgram - startProgram);
-    std::fprintf(stderr,
-        "Total time %g Time in function %g\n",
-        timeProgram,
-        timeFunction);
     return 0;
 }

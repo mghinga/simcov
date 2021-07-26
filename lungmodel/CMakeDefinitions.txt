@@ -1,4 +1,0 @@
-## compute cell counts only
-#add_definitions(-DCOMPUTE_ONLY)
-# use colors in the output
-add_definitions(-DCONFIG_USE_COLORS)

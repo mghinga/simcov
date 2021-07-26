@@ -1,5 +1,6 @@
-.build
+build
 lungmodel
-*.dat
-.vscode
 __pycache__
+*.png
+airway.csv
+.vs

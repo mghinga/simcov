@@ -1,23 +1,24 @@
 # Lung Model #
 
-## Installing and building
+## Installing
 
 Build it with
 
-`./build.sh`
+`make`
 
 The executable will be installed in this working directory.
 
 ## Running
+Usage: lungmodel <dim_x> <dim_y> <dim_z> <offset_x> <offset_y> <offset_z>
 
-To run, execute
+To run the full lung model, execute:
 
-`./lungmodel --dim 300 300 300 --levels 3 --scale 2000 --output lung_model_data`
+`./lungmodel 25255 21031 43734 0 0 0`
 
-It will create an 'lung_model_data' output directory whose full filepath is required in the simcov config file. For example:
+It will create an 'airway.csv' whose full filepath is required in the simcov config file. For example:
 
 ```
 ; Directory containing files for lung model
-  lung-model =                  /users/projects/simcov/lungmodel/lung_model_data
+  lung-model =                  /users/projects/simcov/lungmodel
 
 ```
