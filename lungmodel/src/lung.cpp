@@ -99,22 +99,31 @@ void rotate(int32_t (&vec)[3], const double (&axis)[3], double angle) {
     vec[2] = (int32_t)round(newZ);
 }
 
-void setModelBounds(const int32_t(&pos)[3]) {
-    if (pos[0] > maxx) {
-        maxx = pos[0];
-    } else if (pos[0] < minx) {
-        minx = pos[0];
+void setLocalModelBounds(const int32_t(&pos)[3], int32_t &_minx, int32_t &_maxx, int32_t &_miny, int32_t &_maxy, int32_t &_minz, int32_t &_maxz) {
+    if (pos[0] > _maxx) {
+        _maxx = pos[0];
+    } else if (pos[0] < _minx) {
+        _minx = pos[0];
     }
-    if (pos[1] > maxy) {
-        maxy = pos[1];
-    } else if (pos[1] < miny) {
-        miny = pos[1];
+    if (pos[1] > _maxy) {
+        _maxy = pos[1];
+    } else if (pos[1] < _miny) {
+        _miny = pos[1];
     }
-    if (pos[2] > maxz) {
-        maxz = pos[2];
-    } else if (pos[2] < minz) {
-        minz = pos[2];
+    if (pos[2] > _maxz) {
+        _maxz = pos[2];
+    } else if (pos[2] < _minz) {
+        _minz = pos[2];
     }
+}
+
+void setModelBounds(int32_t _minx, int32_t _maxx, int32_t _miny, int32_t _maxy, int32_t _minz, int32_t _maxz) {
+    minx = std::min(minx, _minx);
+    maxx = std::max(maxx, _maxx);
+    miny = std::min(miny, _miny);
+    maxy = std::max(maxy, _maxy);
+    minz = std::min(minz, _minz);
+    maxz = std::max(maxz, _maxz);
 }
 
 int32_t addPosition(int32_t x,
@@ -122,7 +131,9 @@ int32_t addPosition(int32_t x,
     int32_t z,
     const int32_t(&pos)[3],
     double bAngle,
-    double rotateZ) {
+    double rotateZ,
+    int32_t &_minx, int32_t &_maxx, int32_t &_miny, int32_t &_maxy, int32_t &_minz, int32_t &_maxz
+    ) {
     // Treat as positional vectors and apply rotations and translate y
     int32_t position[3] = { x, y, z };
     rotate(position, yaxis, bAngle);
@@ -141,11 +152,8 @@ int32_t addPosition(int32_t x,
         return;
     }
 #endif
-#pragma omp critical
-    {
-        // Compute model min max dimension boundaries
-        setModelBounds(position);//TODO maybe reduce?
-    }
+    // Compute model min max dimension boundaries
+    setLocalModelBounds(position, _minx, _maxx, _miny, _maxy, _minz, _maxz);//TODO maybe reduce?
     // Return new location in 1D
     return (position[0] + position[1]
         * gridSize[0] + position[2] * gridSize[0] * gridSize[1]);
@@ -157,6 +165,7 @@ void constructAlveoli(const int32_t (&pos)[3],
     std::vector<int64_t>& positions) {
     // Single alveolar volume 200x200x200 um, 40x40x40 units, [-20, 20]
     int64_t newPos;
+    int32_t _minx = 0, _maxx = 0, _miny = 0, _maxy = 0, _minz = 0, _maxz = 0;
     for (int32_t x = -idim; x <= idim; x++) {
         for (int32_t y = -idim; y <= idim; y++) {
             for (int32_t z = 0; z < idim2; z++) {
@@ -170,7 +179,8 @@ void constructAlveoli(const int32_t (&pos)[3],
                         z,
                         pos,
                         bAngle,
-                        rotateZ);
+                        rotateZ,
+                        _minx, _maxx, _miny, _maxy, _minz, _maxz);
                     positions.push_back(newPos);
                 }
             }
@@ -178,6 +188,7 @@ void constructAlveoli(const int32_t (&pos)[3],
     }
 #pragma omp critical
     {
+        setModelBounds(_minx, _maxx, _miny, _maxy, _minz, _maxz);
         numAlveoli++;
     }
 }
@@ -188,6 +199,7 @@ void constructSegment(const int32_t (&root)[3],
     double rotateZ,
     bool isTerminal,
     std::vector<int64_t> &positions) {
+    int32_t _minx = 0, _maxx = 0, _miny = 0, _maxy = 0, _minz = 0, _maxz = 0;
     // Build cylinder at origin along y-axis
     int32_t x, y, newPos;
     for (int32_t z = 0; z <= level.L; z++) {
@@ -198,12 +210,14 @@ void constructSegment(const int32_t (&root)[3],
             y = (int32_t)round(level.r
                 * sin(cylinderRadialIncrement)
                 * sin(az));
-            newPos = addPosition(x, y, z, root, level.bAngle, rotateZ);
+            newPos = addPosition(x, y, z, root, level.bAngle, rotateZ,
+                                 _minx, _maxx, _miny, _maxy, _minz, _maxz);
             positions.push_back(newPos);
         }
     }
 #pragma omp critical
     {
+        setModelBounds(_minx, _maxx, _miny, _maxy, _minz, _maxz);
         numAirways++;
     }
     // Draw alveolus at each terminal airway
@@ -324,9 +338,16 @@ int main(int argc, char *argv[]) {
     * 
     * Note* last generations are alveolus
     */
-    int generations[] = { 24, 24, 26, 24, 25 };
+
+    //epiCellPositions.1d.resize(50000000);
+    //size_t num_epicells = 0;
+    //int generations[] = { 24, 24, 26, 24, 25 };
+    int generations[] = { 10, 24, 26, 24, 25 };
     int startIndex[] = { 0, 24, 48, 74, 98 };
     int32_t base[] = { 12628, 10516, 0 }; // Base of btree at roundUp(bounds/2)
+
+    double t_construct = 0;
+    
     for (int i = 0; i < 1; i++) {//TODO 5; i++) {
         std::fprintf(stderr,
             "Processing lobe %d generations %d\n",
@@ -383,6 +404,7 @@ int main(int argc, char *argv[]) {
                             rchild[2] = branch.root[2] + base[2];
 #pragma omp task
                             {
+                                auto tc = NOW();
                                 std::vector<int64_t> positions;
                                 constructSegment(branch.root,
                                     rchild,
@@ -390,6 +412,9 @@ int main(int argc, char *argv[]) {
                                     rotateZ,
                                     isTerminal,
                                     positions);
+                                std::chrono::duration<double> t_elapsed = NOW() - tc;
+#pragma omp atomic update
+                                t_construct += t_elapsed.count();
 #pragma omp critical
                                 {
                                     epiCellPositions1D.insert(epiCellPositions1D.end(),
@@ -418,6 +443,7 @@ int main(int argc, char *argv[]) {
                             lchild[2] = branch.root[2] + base[2];
 #pragma omp task
                             {
+                                auto tc = NOW();
                                 std::vector<int64_t> positions;
                                 constructSegment(branch.root,
                                     lchild,
@@ -425,6 +451,9 @@ int main(int argc, char *argv[]) {
                                     rotateZ,
                                     isTerminal,
                                     positions);
+                                std::chrono::duration<double> t_elapsed = NOW() - tc;
+#pragma omp atomic update
+                                t_construct += t_elapsed.count();
 #pragma omp critical
                                 {
                                     epiCellPositions1D.insert(epiCellPositions1D.end(),
@@ -444,10 +473,15 @@ int main(int argc, char *argv[]) {
 #pragma omp taskwait
             } // end single
         } // end parallel
-        std::chrono::duration<double> t_elapsed = NOW() - start;
-        std::fprintf(stderr, "%d total time %g\n", i, t_elapsed.count());
-        reduce();
+        t_construct /= omp_get_max_threads();
+        auto t_reduce = NOW();
+        //reduce();
         print();
+        std::chrono::duration<double> t_reduce_elapsed = NOW() - t_reduce;
+        std::chrono::duration<double> t_elapsed = NOW() - start;
+        std::fprintf(stderr, "-------\nconstructSegment time %.4f s, %.2f %%\n", t_construct, 100.0 * t_construct / t_elapsed.count());
+        std::fprintf(stderr, "reduce time %.4f s, %.2f %%\n", t_reduce_elapsed.count(), 100.0 * t_reduce_elapsed.count() / t_elapsed.count());
+        std::fprintf(stderr, "Lobe %d total time %g\n\n", i, t_elapsed.count());
     }
     return 0;
 }
