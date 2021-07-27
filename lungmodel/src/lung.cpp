@@ -21,8 +21,6 @@
 
 #include "prime.hpp"
 
-#define SLM_WRITE_TO_FILE
-
 #define NOW std::chrono::high_resolution_clock::now
 
 class Random {
@@ -334,25 +332,26 @@ void reduce() {
     int MAX_PROBE = 100;
     size_t n = epiCellPositions1D.size();
     primes::Prime prime;
-    prime.set(n * 2, true);
+    prime.set(n * 1.5, true);
     size_t max_elems = prime.get();
     // choose max int64_t as empty marker
     const int64_t EMPTY_SLOT = std::numeric_limits<int64_t>::max();
     std::vector<std::atomic<int64_t>> elems(max_elems);
-    std::cerr << "Calculating intersections\n";
+    std::cerr << "Calculating intersections for " << n << " epicells\n";
+    std::cerr << "sizeof size_t " << sizeof(size_t) << "\n";
 #pragma omp parallel for
-    for (int i = 0; i < max_elems; i++) {
+    for (size_t i = 0; i < max_elems; i++) {
         elems[i] = EMPTY_SLOT;
     }
     size_t numIntersectCells = 0;
     size_t num_dropped_inserts = 0;
 #pragma omp parallel
     {
-        int tenth = n / (10 * omp_get_max_threads());
+        size_t tenth = n / (10 * omp_get_max_threads());
         size_t my_intersects = 0;
 #pragma omp for
         // Merge all positions into unordered set
-        for (int i = 0; i < n; i++) {
+        for (size_t i = 0; i < n; i++) {
             if (omp_get_thread_num() == 0 && i > 0 && i % tenth == 0) {
                 int my_count = i * omp_get_max_threads();
                 std::cerr << get_cur_time() << " epicells processed: " << my_count
@@ -433,6 +432,10 @@ int main(int argc, char *argv[]) {
         auto max_branches = pow(2.0, generations[i] - 1);
         auto one_tenth = max_branches / 10;
         auto start = NOW();
+        auto est_max_epicells = 2500000.0 * pow(max_branches, 0.704);
+        std::cerr << "Estimated max epicells " << est_max_epicells << " max memory estimate "
+                  << ((2.5 * est_max_epicells * sizeof(int64_t)) / 1024 / 1024 / 1024) << " GBs\n";
+        epiCellPositions1D.reserve(est_max_epicells);
 #pragma omp parallel
         {
             int num_branches_processed = 0;
@@ -541,7 +544,8 @@ int main(int argc, char *argv[]) {
         } // end parallel
         t_construct /= omp_get_max_threads();
         std::chrono::duration<double> t_elapsed = NOW() - start;
-        std::cerr << "Construction completed in " << t_elapsed.count() << " s\n";
+        std::cerr << "Construction completed in " << t_elapsed.count()
+                  << " s, with " << epiCellPositions1D.size() << " epicells\n";
         auto t_reduce = NOW();
         reduce();
         std::chrono::duration<double> t_reduce_elapsed = NOW() - t_reduce;
