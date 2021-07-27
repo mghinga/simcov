@@ -21,7 +21,7 @@
 
 #include "prime.hpp"
 
-//#define SLM_WRITE_TO_FILE
+#define SLM_WRITE_TO_FILE
 
 #define NOW std::chrono::high_resolution_clock::now
 
@@ -284,37 +284,38 @@ void loadEstimatedParameters() {
 
 }
 
-void print() {
+void print(bool write_to_file, int lobe) {
     std::fprintf(stderr,
         "Airways " "%" PRId64 " Alveolus " "%" PRId64 "\n",
         numAirways,
         numAlveoli);
-#ifdef SLM_WRITE_TO_FILE
-    // sort to get same values even after parallel creation - only needed for debugging
-    //std::sort(epiCellPositions1D.begin(), epiCellPositions1D.end());
-    
-    std::ofstream ofs;
-    /*
-    ofs.open("airway.csv", std::ofstream::out);
-    if (!ofs.is_open()) {
-        std::fprintf(stderr, "Could not create file");
-        exit(1);
+    if (write_to_file) {
+        // sort to get same values even after parallel creation - only needed for debugging
+        //std::sort(epiCellPositions1D.begin(), epiCellPositions1D.end());
+        std::ofstream ofs;
+        /*
+          ofs.open("airway.csv", std::ofstream::out);
+          if (!ofs.is_open()) {
+          std::fprintf(stderr, "Could not create file");
+          exit(1);
+          }
+          for (const int64_t& a : epiCellPositions1D) {
+          ofs << a << std::endl;
+          }
+          std::fprintf(stderr, "Bytes written %ld\n", (long)ofs.tellp());
+          ofs.close();
+        */
+        std::string fname = std::string("airway-") + std::to_string(lobe) + std::string(".bin");
+        ofs.open(fname, std::ios::out | std::ios::binary);
+        if (!ofs.is_open()) {
+            std::fprintf(stderr, "Could not create file");
+            exit(1);
+        }
+        ofs.write((char*)&epiCellPositions1D[0], epiCellPositions1D.size() * sizeof(int64_t));
+        double gbs_written = (double)ofs.tellp() / (1024 * 1024 * 1024);
+        ofs.close();
+        std::cerr << "Wrote " << gbs_written << " GBs to " << fname << "\n";
     }
-    for (const int64_t& a : epiCellPositions1D) {
-        ofs << a << std::endl;
-    }
-    std::fprintf(stderr, "Bytes written %ld\n", (long)ofs.tellp());
-    ofs.close();
-    */
-    ofs.open("airway.bin", std::ios::out | std::ios::binary);
-    if (!ofs.is_open()) {
-        std::fprintf(stderr, "Could not create file");
-        exit(1);
-    }
-    ofs.write((char*)&epiCellPositions1D[0], epiCellPositions1D.size() * sizeof(int64_t));
-    std::cerr << "Bytes written " << (long)ofs.tellp() << "\n";
-    ofs.close();
-#endif
     std::fprintf(stderr,
         "%d %d %d %d %d %d\n",
         minx, maxx, miny, maxy, minz, maxz);
@@ -378,8 +379,8 @@ void reduce() {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 7) {
-        printf("Usage: %s <dim_x> <dim_y> <dim_z> <offset_x> <offset_y> <offset_z>\n", argv[0]);
+    if (argc != 9) {
+        printf("Usage: %s <dim_x> <dim_y> <dim_z> <offset_x> <offset_y> <offset_z> <generations> <dump>\n", argv[0]);
         return -1;
     }
     // Set input parameters
@@ -389,6 +390,9 @@ int main(int argc, char *argv[]) {
     gridOffset[0] = atoi(argv[4]);
     gridOffset[1] = atoi(argv[5]);
     gridOffset[2] = atoi(argv[6]);
+    int lobe0_gens = atoi(argv[7]);
+    std::string write_str(argv[8]);
+    bool write_to_file = (write_str == "dump");
     loadEstimatedParameters();
     /**
     * Starting at root and preorder iteratively build tree
@@ -407,7 +411,7 @@ int main(int argc, char *argv[]) {
     //epiCellPositions.1d.resize(50000000);
     //size_t num_epicells = 0;
     //int generations[] = { 24, 24, 26, 24, 25 };
-    int generations[] = { 10, 24, 26, 24, 25 };
+    int generations[] = { lobe0_gens, 24, 26, 24, 25 };
     int startIndex[] = { 0, 24, 48, 74, 98 };
     int32_t base[] = { 12628, 10516, 0 }; // Base of btree at roundUp(bounds/2)
 
@@ -532,7 +536,7 @@ int main(int argc, char *argv[]) {
         reduce();
         std::chrono::duration<double> t_reduce_elapsed = NOW() - t_reduce;
         auto t_print = NOW();
-        print();
+        print(write_to_file, i);
         std::chrono::duration<double> t_print_elapsed = NOW() - t_print;
         t_elapsed = NOW() - start;
         std::fprintf(stderr, "-------\nconstructSegment time %.4f s, %.2f %%\n", t_construct, 100.0 * t_construct / t_elapsed.count());
