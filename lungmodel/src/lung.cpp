@@ -338,7 +338,6 @@ void reduce() {
     const int64_t EMPTY_SLOT = std::numeric_limits<int64_t>::max();
     std::vector<std::atomic<int64_t>> elems(max_elems);
     std::cerr << "Calculating intersections for " << n << " epicells\n";
-    std::cerr << "sizeof size_t " << sizeof(size_t) << "\n";
 #pragma omp parallel for
     for (size_t i = 0; i < max_elems; i++) {
         elems[i] = EMPTY_SLOT;
@@ -432,8 +431,8 @@ int main(int argc, char *argv[]) {
         auto max_branches = pow(2.0, generations[i] - 1);
         auto one_tenth = max_branches / 10;
         auto start = NOW();
-        auto est_max_epicells = 2500000.0 * pow(max_branches, 0.704);
-        std::cerr << "Estimated max epicells " << est_max_epicells << " max memory estimate "
+        auto est_max_epicells = 3700000.0 * pow(max_branches, 0.704);
+        std::cerr << "Estimated max epicells " << (int64_t)est_max_epicells << " max memory estimate "
                   << ((2.5 * est_max_epicells * sizeof(int64_t)) / 1024 / 1024 / 1024) << " GBs\n";
         epiCellPositions1D.reserve(est_max_epicells);
 #pragma omp parallel
