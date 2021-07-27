@@ -330,6 +330,7 @@ void reduce() {
     // choose max int64_t as empty marker
     const int64_t EMPTY_SLOT = std::numeric_limits<int64_t>::max();
     std::vector<std::atomic<int64_t>> elems(max_elems);
+    std::cerr << "Calculating intersections\n";
 #pragma omp parallel for
     for (int i = 0; i < max_elems; i++) {
         elems[i] = EMPTY_SLOT;
@@ -338,10 +339,16 @@ void reduce() {
     size_t num_dropped_inserts = 0;
 #pragma omp parallel
     {
+        int tenth = n / (10 * omp_get_max_threads());
         size_t my_intersects = 0;
 #pragma omp for
         // Merge all positions into unordered set
         for (int i = 0; i < n; i++) {
+            if (omp_get_thread_num() == 0 && i > 0 && i % tenth == 0) {
+                int my_count = i * omp_get_max_threads();
+                std::cerr << "epicells processed: " << my_count
+                          << " out of " << n << " (" << round(100.0 * my_count / n) << " %)\n";
+            }
             // Record location and if the cell intersects another
             auto slot = std::hash<int64_t>{}(epiCellPositions1D[i]) % max_elems;
             auto start_slot = slot;
@@ -408,7 +415,7 @@ int main(int argc, char *argv[]) {
 
     for (int i = 0; i < 1; i++) {//TODO 5; i++) {
         std::fprintf(stderr,
-            "Processing lobe %d generations %d\n",
+            "Processing lobe %d for %d generations\n",
             i,
             generations[i]);
         auto max_branches = pow(2.0, generations[i] - 1);
