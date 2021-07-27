@@ -352,7 +352,7 @@ void reduce() {
         // Merge all positions into unordered set
         for (size_t i = 0; i < n; i++) {
             if (omp_get_thread_num() == 0 && i > 0 && i % tenth == 0) {
-                int my_count = i * omp_get_max_threads();
+                size_t my_count = i * omp_get_max_threads();
                 std::cerr << get_cur_time() << " epicells processed: " << my_count
                           << " out of " << n << " (" << round(100.0 * my_count / n) << " %)\n";
             }
