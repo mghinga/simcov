@@ -400,7 +400,7 @@ int main(int argc, char *argv[]) {
     //epiCellPositions.1d.resize(50000000);
     //size_t num_epicells = 0;
     //int generations[] = { 24, 24, 26, 24, 25 };
-    int generations[] = { 10, 24, 26, 24, 25 };
+    int generations[] = { 20, 24, 26, 24, 25 };
     int startIndex[] = { 0, 24, 48, 74, 98 };
     int32_t base[] = { 12628, 10516, 0 }; // Base of btree at roundUp(bounds/2)
 
@@ -414,6 +414,7 @@ int main(int argc, char *argv[]) {
         auto start = NOW();
 #pragma omp parallel
         {
+            int num_branches_processed = 0;
 #pragma omp single
             {
                 // Create root for next generation
@@ -436,9 +437,14 @@ int main(int argc, char *argv[]) {
                     while (!branches.empty()) {
                         Branch branch = branches.top();
                         branches.pop();
+                        num_branches_processed++;
+                        if (num_branches_processed % 1000 == 0)
+                            std::cerr << "branches processed " << num_branches_processed << "\n";;
+                        /*
                         std::cerr << "branch " << branch.root[0] << " " << branch.root[1] << " " << branch.root[2] << " "
                                   << branch.iteration << " " << branch.index << " " 
                                   << branch.previousBranchAngle << " " << branch.previousRotAngle << "\n";
+                        */
                         if (branch.iteration <= lastGeneration) {
                             // Determine if this is a terminal bronchiole
                             bool isTerminal = (branch.iteration == lastGeneration) ? true : false;
