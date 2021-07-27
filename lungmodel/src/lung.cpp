@@ -16,9 +16,12 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <chrono>
+#include <atomic>
 #include <omp.h>
 
-#define SLM_WRITE_TO_FILE
+#include "prime.hpp"
+
+//#define SLM_WRITE_TO_FILE
 
 #define NOW std::chrono::high_resolution_clock::now
 
@@ -75,9 +78,7 @@ int32_t gridOffset[3] = {0}; // Position of simulation space in model
 
 // Output variables
 int64_t numAirways = 0, numAlveoli = 0;
-int64_t numCells = 0, numIntersectCells = 0;
 int32_t minx = 0, maxx = 0, miny = 0, maxy = 0, minz = 0, maxz = 0;
-std::unordered_set<int64_t> results;
 std::vector<int64_t> epiCellPositions1D;
 
 void rotate(int32_t (&vec)[3], const double (&axis)[3], double angle) {
@@ -289,8 +290,11 @@ void print() {
         numAirways,
         numAlveoli);
 #ifdef SLM_WRITE_TO_FILE
+    // sort to get same values even after parallel creation - only needed for debugging
+    std::sort(epiCellPositions1D.begin(), epiCellPositions1D.end());
+    
     std::ofstream ofs;
-    //ofs.open("airway.csv", std::ofstream::out | std::ofstream::app);
+    /*
     ofs.open("airway.csv", std::ofstream::out);
     if (!ofs.is_open()) {
         std::fprintf(stderr, "Could not create file");
@@ -301,44 +305,69 @@ void print() {
     }
     std::fprintf(stderr, "Bytes written %ld\n", (long)ofs.tellp());
     ofs.close();
+    */
+    ofs.open("airway.bin", std::ios::out | std::ios::binary);
+    if (!ofs.is_open()) {
+        std::fprintf(stderr, "Could not create file");
+        exit(1);
+    }
+    ofs.write((char*)&epiCellPositions1D[0], epiCellPositions1D.size() * sizeof(int64_t));
+    std::cerr << "Bytes written " << (long)ofs.tellp() << "\n";
+    ofs.close();
 #endif
     std::fprintf(stderr,
         "%d %d %d %d %d %d\n",
         minx, maxx, miny, maxy, minz, maxz);
-    std::fprintf(stderr,
-        "Cells intersecting " "%" PRId64 " total cells " "%" PRId64 "\n",
-        numIntersectCells,
-        numCells);
-}
-
-template<typename InputIt>
-std::size_t countUniqueElements(InputIt first, InputIt last) {
-    using value_t = typename std::iterator_traits<InputIt>::value_type;
-    return std::unordered_set<value_t>(first, last).size();
 }
 
 void reduce() {
-    /*
-    // Merge all positions into unordered set
-    for (int i = 0; i < epiCellPositions1D.size(); i++) {
-        // Record location and if the cell intersects another
-        success = results.insert(epiCellPositions1D[i]).second;
-        if (!success) {
-            numIntersectCells++;
-        }
-        numCells++;
-    }
-    std::chrono::duration<double> t_elapsed = NOW() - t;
-    std::cerr << "first attempt took " << t_elapsed.count() << " s, num intersections "
-              << numIntersectCells << " (" << 100.0 * (double)numIntersectCells / numCells << " %)\n";
-    */
     auto t = NOW();
-    uint64_t num_unique = countUniqueElements(epiCellPositions1D.begin(), epiCellPositions1D.end());
+    int MAX_PROBE = 100;
+    size_t n = epiCellPositions1D.size();
+    primes::Prime prime;
+    prime.set(n * 2, true);
+    size_t max_elems = prime.get();
+    // choose max int64_t as empty marker
+    const int64_t EMPTY_SLOT = std::numeric_limits<int64_t>::max();
+    std::vector<std::atomic<int64_t>> elems(max_elems);
+#pragma omp parallel for
+    for (int i = 0; i < max_elems; i++) {
+        elems[i] = EMPTY_SLOT;
+    }
+    size_t numIntersectCells = 0;
+    size_t num_dropped_inserts = 0;
+#pragma omp parallel
+    {
+        size_t my_intersects = 0;
+#pragma omp for
+        // Merge all positions into unordered set
+        for (int i = 0; i < n; i++) {
+            // Record location and if the cell intersects another
+            auto slot = std::hash<int64_t>{}(epiCellPositions1D[i]) % max_elems;
+            auto start_slot = slot;
+            for (int j = 0; j < MAX_PROBE; j++) {
+                int64_t old_elem = EMPTY_SLOT;
+                elems[slot].compare_exchange_strong(old_elem, epiCellPositions1D[i], std::memory_order_release, std::memory_order_relaxed);
+                if (old_elem == EMPTY_SLOT) {
+                    break;
+                } else if (old_elem == epiCellPositions1D[i]) {
+                    my_intersects++;
+                    break;
+                }
+                // quadratic probe
+                slot = (start_slot + (j + 1) * (j + 1)) % max_elems;
+                if (j == MAX_PROBE - 1) num_dropped_inserts++;
+            }
+        }
+#pragma omp atomic update
+        numIntersectCells += my_intersects;
+    }
+    size_t numCells = n;
     std::chrono::duration<double> t_elapsed = NOW() - t;
-    numCells = epiCellPositions1D.size();
-    numIntersectCells = numCells - num_unique;
-    std::cerr << "reduce took " << t_elapsed.count() << " s, num intersections "
-              << numIntersectCells << " (" << 100.0 * (double)numIntersectCells / numCells << " %)\n";
+    std::cerr << "Calculating intersections took " << t_elapsed.count() << " s\n"
+              << "Total cells " << numCells << " num intersections " << numIntersectCells
+              << " (" << 100.0 * (double)numIntersectCells / numCells << " %)\n";
+    if (num_dropped_inserts) std::cerr << "dropped " << num_dropped_inserts << std::endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -371,12 +400,12 @@ int main(int argc, char *argv[]) {
     //epiCellPositions.1d.resize(50000000);
     //size_t num_epicells = 0;
     //int generations[] = { 24, 24, 26, 24, 25 };
-    int generations[] = { 4, 24, 26, 24, 25 };
+    int generations[] = { 10, 24, 26, 24, 25 };
     int startIndex[] = { 0, 24, 48, 74, 98 };
     int32_t base[] = { 12628, 10516, 0 }; // Base of btree at roundUp(bounds/2)
 
     double t_construct = 0;
-    
+
     for (int i = 0; i < 1; i++) {//TODO 5; i++) {
         std::fprintf(stderr,
             "Processing lobe %d generations %d\n",
@@ -407,7 +436,6 @@ int main(int argc, char *argv[]) {
                     while (!branches.empty()) {
                         Branch branch = branches.top();
                         branches.pop();
-                        std::cerr << "num branches " << branches.size() << "\n";
                         std::cerr << "branch " << branch.root[0] << " " << branch.root[1] << " " << branch.root[2] << " "
                                   << branch.iteration << " " << branch.index << " " 
                                   << branch.previousBranchAngle << " " << branch.previousRotAngle << "\n";
@@ -485,13 +513,15 @@ int main(int argc, char *argv[]) {
             } // end single
         } // end parallel
         t_construct /= omp_get_max_threads();
+        std::chrono::duration<double> t_elapsed = NOW() - start;
+        std::cerr << "Construction completed in " << t_elapsed.count() << " s\n";
         auto t_reduce = NOW();
         reduce();
         std::chrono::duration<double> t_reduce_elapsed = NOW() - t_reduce;
         auto t_print = NOW();
         print();
         std::chrono::duration<double> t_print_elapsed = NOW() - t_print;
-        std::chrono::duration<double> t_elapsed = NOW() - start;
+        t_elapsed = NOW() - start;
         std::fprintf(stderr, "-------\nconstructSegment time %.4f s, %.2f %%\n", t_construct, 100.0 * t_construct / t_elapsed.count());
         std::fprintf(stderr, "reduce time %.4f s, %.2f %%\n", t_reduce_elapsed.count(), 100.0 * t_reduce_elapsed.count() / t_elapsed.count());
         std::fprintf(stderr, "print time %.4f s, %.2f %%\n", t_print_elapsed.count(), 100.0 * t_print_elapsed.count() / t_elapsed.count());
