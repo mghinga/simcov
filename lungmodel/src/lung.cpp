@@ -291,7 +291,7 @@ void print() {
         numAlveoli);
 #ifdef SLM_WRITE_TO_FILE
     // sort to get same values even after parallel creation - only needed for debugging
-    std::sort(epiCellPositions1D.begin(), epiCellPositions1D.end());
+    //std::sort(epiCellPositions1D.begin(), epiCellPositions1D.end());
     
     std::ofstream ofs;
     /*
@@ -400,7 +400,7 @@ int main(int argc, char *argv[]) {
     //epiCellPositions.1d.resize(50000000);
     //size_t num_epicells = 0;
     //int generations[] = { 24, 24, 26, 24, 25 };
-    int generations[] = { 20, 24, 26, 24, 25 };
+    int generations[] = { 10, 24, 26, 24, 25 };
     int startIndex[] = { 0, 24, 48, 74, 98 };
     int32_t base[] = { 12628, 10516, 0 }; // Base of btree at roundUp(bounds/2)
 
@@ -411,6 +411,8 @@ int main(int argc, char *argv[]) {
             "Processing lobe %d generations %d\n",
             i,
             generations[i]);
+        auto max_branches = pow(2.0, generations[i] - 1);
+        auto one_tenth = max_branches / 10;
         auto start = NOW();
 #pragma omp parallel
         {
@@ -437,14 +439,12 @@ int main(int argc, char *argv[]) {
                     while (!branches.empty()) {
                         Branch branch = branches.top();
                         branches.pop();
+                        int prev_tenth_branches_processed = num_branches_processed / one_tenth;
                         num_branches_processed++;
-                        if (num_branches_processed % 1000 == 0)
-                            std::cerr << "branches processed " << num_branches_processed << "\n";;
-                        /*
-                        std::cerr << "branch " << branch.root[0] << " " << branch.root[1] << " " << branch.root[2] << " "
-                                  << branch.iteration << " " << branch.index << " " 
-                                  << branch.previousBranchAngle << " " << branch.previousRotAngle << "\n";
-                        */
+                        int tenth_branches_processed = num_branches_processed / one_tenth;
+                        if (tenth_branches_processed > prev_tenth_branches_processed) 
+                            std::cerr << "branches processed: " << num_branches_processed << " out of " << max_branches
+                                      << " (" << (int)(100 * num_branches_processed / max_branches) << " %)\n";;
                         if (branch.iteration <= lastGeneration) {
                             // Determine if this is a terminal bronchiole
                             bool isTerminal = (branch.iteration == lastGeneration) ? true : false;
