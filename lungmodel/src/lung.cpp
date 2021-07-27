@@ -81,6 +81,14 @@ int64_t numAirways = 0, numAlveoli = 0;
 int32_t minx = 0, maxx = 0, miny = 0, maxy = 0, minz = 0, maxz = 0;
 std::vector<int64_t> epiCellPositions1D;
 
+std::string get_cur_time() {
+    std::time_t result = std::time(nullptr);
+    char buffer[64];
+    buffer[0] = '\0';
+    size_t sz = strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S ", std::localtime(&result));
+    return std::string(buffer);
+}
+  
 void rotate(int32_t (&vec)[3], const double (&axis)[3], double angle) {
     /**
     * http://inside.mines.edu/~gmurray/ArbitraryAxisRotation/ArbitraryAxisRotation.html
@@ -347,7 +355,7 @@ void reduce() {
         for (int i = 0; i < n; i++) {
             if (omp_get_thread_num() == 0 && i > 0 && i % tenth == 0) {
                 int my_count = i * omp_get_max_threads();
-                std::cerr << "epicells processed: " << my_count
+                std::cerr << get_cur_time() << " epicells processed: " << my_count
                           << " out of " << n << " (" << round(100.0 * my_count / n) << " %)\n";
             }
             // Record location and if the cell intersects another
@@ -453,9 +461,11 @@ int main(int argc, char *argv[]) {
                         int prev_tenth_branches_processed = num_branches_processed / one_tenth;
                         num_branches_processed++;
                         int tenth_branches_processed = num_branches_processed / one_tenth;
-                        if (tenth_branches_processed > prev_tenth_branches_processed) 
-                            std::cerr << "branches processed: " << num_branches_processed << " out of " << max_branches
+                        if (tenth_branches_processed > prev_tenth_branches_processed) {
+                            std::cerr << get_cur_time() << " branches processed: " << num_branches_processed
+                                      << " out of " << max_branches
                                       << " (" << (int)(100 * num_branches_processed / max_branches) << " %)\n";;
+                        }
                         if (branch.iteration <= lastGeneration) {
                             // Determine if this is a terminal bronchiole
                             bool isTerminal = (branch.iteration == lastGeneration) ? true : false;
