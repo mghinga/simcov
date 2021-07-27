@@ -18,7 +18,7 @@
 #include <chrono>
 #include <omp.h>
 
-//#define SLM_WRITE_TO_FILE
+#define SLM_WRITE_TO_FILE
 
 #define NOW std::chrono::high_resolution_clock::now
 
@@ -201,8 +201,8 @@ void constructSegment(const int32_t (&root)[3],
     const int32_t(&newRoot)[3],
     const Level &level,
     double rotateZ,
-    bool isTerminal,
-    std::vector<int64_t> &positions) {
+    bool isTerminal) {
+    std::vector<int64_t> positions;
     int32_t _minx = 0, _maxx = 0, _miny = 0, _maxy = 0, _minz = 0, _maxz = 0;
     // Build cylinder at origin along y-axis
     int32_t x, y, newPos;
@@ -227,6 +227,12 @@ void constructSegment(const int32_t (&root)[3],
     // Draw alveolus at each terminal airway
     if (isTerminal) {
         constructAlveoli(newRoot, level.bAngle, rotateZ, positions);
+    }
+#pragma omp critical
+    {
+        epiCellPositions1D.insert(epiCellPositions1D.end(),
+                                  positions.begin(),
+                                  positions.end());
     }
 }
 
@@ -389,13 +395,7 @@ int main(int argc, char *argv[]) {
                 root[0] = root[0] + base[0];
                 root[1] = root[1] + base[1];
                 root[2] = root[2] + base[2];
-                {
-                    std::vector<int64_t> positions;
-                    constructSegment(base, root, lvl, 0.0, false, positions);
-                    epiCellPositions1D.insert(epiCellPositions1D.end(),
-                        positions.begin(),
-                        positions.end());
-                }
+                constructSegment(base, root, lvl, 0.0, false);
                 branches.push(Branch(root,
                     1,
                     startIndex[i] + 1,
@@ -432,22 +432,14 @@ int main(int argc, char *argv[]) {
 #pragma omp task
                             {
                                 auto tc = NOW();
-                                std::vector<int64_t> positions;
                                 constructSegment(branch.root,
                                     rchild,
                                     lvl,
                                     rotateZ,
-                                    isTerminal,
-                                    positions);
+                                    isTerminal);
                                 std::chrono::duration<double> t_elapsed = NOW() - tc;
 #pragma omp atomic update
                                 t_construct += t_elapsed.count();
-#pragma omp critical
-                                {
-                                    epiCellPositions1D.insert(epiCellPositions1D.end(),
-                                        positions.begin(),
-                                        positions.end());
-                                }
                             }
                             // Push right child to stack first for preorder
                             branches.push(Branch(rchild,
@@ -471,22 +463,14 @@ int main(int argc, char *argv[]) {
 #pragma omp task
                             {
                                 auto tc = NOW();
-                                std::vector<int64_t> positions;
                                 constructSegment(branch.root,
                                     lchild,
                                     lvl,
                                     rotateZ,
-                                    isTerminal,
-                                    positions);
+                                    isTerminal);
                                 std::chrono::duration<double> t_elapsed = NOW() - tc;
 #pragma omp atomic update
                                 t_construct += t_elapsed.count();
-#pragma omp critical
-                                {
-                                    epiCellPositions1D.insert(epiCellPositions1D.end(),
-                                        positions.begin(),
-                                        positions.end());
-                                }
                             }
                             // Push left child to stack
                             branches.push(Branch(lchild,
@@ -506,7 +490,7 @@ int main(int argc, char *argv[]) {
         std::chrono::duration<double> t_reduce_elapsed = NOW() - t_reduce;
         auto t_print = NOW();
         print();
-        std::chrono::duration<double> t_print_elapsed = NOW() - t_reduce;
+        std::chrono::duration<double> t_print_elapsed = NOW() - t_print;
         std::chrono::duration<double> t_elapsed = NOW() - start;
         std::fprintf(stderr, "-------\nconstructSegment time %.4f s, %.2f %%\n", t_construct, 100.0 * t_construct / t_elapsed.count());
         std::fprintf(stderr, "reduce time %.4f s, %.2f %%\n", t_reduce_elapsed.count(), 100.0 * t_reduce_elapsed.count() / t_elapsed.count());
