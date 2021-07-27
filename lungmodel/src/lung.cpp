@@ -18,6 +18,8 @@
 #include <chrono>
 #include <omp.h>
 
+//#define SLM_WRITE_TO_FILE
+
 #define NOW std::chrono::high_resolution_clock::now
 
 class Random {
@@ -40,7 +42,7 @@ struct Level {
 
 struct Branch {
     int32_t root[3];
-    int iteration, index, end;
+    int iteration, index;//, end;
     double previousBranchAngle, previousRotAngle;
     Branch(int32_t *root,
         int iteration,
@@ -141,6 +143,7 @@ int32_t addPosition(int32_t x,
     position[0] += pos[0];
     position[1] += pos[1];
     position[2] += pos[2];
+    /*
 #ifdef SLM_WRITE_TO_FILE
     // Verify new location is within grid
     if (position[0] < gridOffset[0] ||//TODO optimize for production
@@ -152,6 +155,7 @@ int32_t addPosition(int32_t x,
         return;
     }
 #endif
+    */
     // Compute model min max dimension boundaries
     setLocalModelBounds(position, _minx, _maxx, _miny, _maxy, _minz, _maxz);//TODO maybe reduce?
     // Return new location in 1D
@@ -280,7 +284,8 @@ void print() {
         numAlveoli);
 #ifdef SLM_WRITE_TO_FILE
     std::ofstream ofs;
-    ofs.open("airway.csv", std::ofstream::out | std::ofstream::app);
+    //ofs.open("airway.csv", std::ofstream::out | std::ofstream::app);
+    ofs.open("airway.csv", std::ofstream::out);
     if (!ofs.is_open()) {
         std::fprintf(stderr, "Could not create file");
         exit(1);
@@ -300,16 +305,34 @@ void print() {
         numCells);
 }
 
+template<typename InputIt>
+std::size_t countUniqueElements(InputIt first, InputIt last) {
+    using value_t = typename std::iterator_traits<InputIt>::value_type;
+    return std::unordered_set<value_t>(first, last).size();
+}
+
 void reduce() {
+    /*
     // Merge all positions into unordered set
     for (int i = 0; i < epiCellPositions1D.size(); i++) {
         // Record location and if the cell intersects another
-        auto success = results.insert(epiCellPositions1D[i]);
-        if (!success.second) {
+        success = results.insert(epiCellPositions1D[i]).second;
+        if (!success) {
             numIntersectCells++;
         }
         numCells++;
     }
+    std::chrono::duration<double> t_elapsed = NOW() - t;
+    std::cerr << "first attempt took " << t_elapsed.count() << " s, num intersections "
+              << numIntersectCells << " (" << 100.0 * (double)numIntersectCells / numCells << " %)\n";
+    */
+    auto t = NOW();
+    uint64_t num_unique = countUniqueElements(epiCellPositions1D.begin(), epiCellPositions1D.end());
+    std::chrono::duration<double> t_elapsed = NOW() - t;
+    numCells = epiCellPositions1D.size();
+    numIntersectCells = numCells - num_unique;
+    std::cerr << "reduce took " << t_elapsed.count() << " s, num intersections "
+              << numIntersectCells << " (" << 100.0 * (double)numIntersectCells / numCells << " %)\n";
 }
 
 int main(int argc, char *argv[]) {
@@ -342,7 +365,7 @@ int main(int argc, char *argv[]) {
     //epiCellPositions.1d.resize(50000000);
     //size_t num_epicells = 0;
     //int generations[] = { 24, 24, 26, 24, 25 };
-    int generations[] = { 10, 24, 26, 24, 25 };
+    int generations[] = { 4, 24, 26, 24, 25 };
     int startIndex[] = { 0, 24, 48, 74, 98 };
     int32_t base[] = { 12628, 10516, 0 }; // Base of btree at roundUp(bounds/2)
 
@@ -384,6 +407,10 @@ int main(int argc, char *argv[]) {
                     while (!branches.empty()) {
                         Branch branch = branches.top();
                         branches.pop();
+                        std::cerr << "num branches " << branches.size() << "\n";
+                        std::cerr << "branch " << branch.root[0] << " " << branch.root[1] << " " << branch.root[2] << " "
+                                  << branch.iteration << " " << branch.index << " " 
+                                  << branch.previousBranchAngle << " " << branch.previousRotAngle << "\n";
                         if (branch.iteration <= lastGeneration) {
                             // Determine if this is a terminal bronchiole
                             bool isTerminal = (branch.iteration == lastGeneration) ? true : false;
@@ -424,10 +451,10 @@ int main(int argc, char *argv[]) {
                             }
                             // Push right child to stack first for preorder
                             branches.push(Branch(rchild,
-                                branch.iteration + 1,
-                                branch.index + 1,
-                                lvl.bAngle,
-                                rotateZ));
+                                                 branch.iteration + 1,
+                                                 branch.index + 1,
+                                                 lvl.bAngle,
+                                                 rotateZ));
                             // Uniform randomly rotate branch
                             rotateZ = (branch.iteration >= 2) ? rnd_gen->get() : 0.0;
                             rotateZ = branch.previousRotAngle - rotateZ;
@@ -463,10 +490,10 @@ int main(int argc, char *argv[]) {
                             }
                             // Push left child to stack
                             branches.push(Branch(lchild,
-                                branch.iteration + 1,
-                                branch.index + 1,
-                                lvl.bAngle,
-                                rotateZ));
+                                                 branch.iteration + 1,
+                                                 branch.index + 1,
+                                                 lvl.bAngle,
+                                                 rotateZ));
                         }
                     } // end while
                 } // end main task
@@ -475,12 +502,15 @@ int main(int argc, char *argv[]) {
         } // end parallel
         t_construct /= omp_get_max_threads();
         auto t_reduce = NOW();
-        //reduce();
-        print();
+        reduce();
         std::chrono::duration<double> t_reduce_elapsed = NOW() - t_reduce;
+        auto t_print = NOW();
+        print();
+        std::chrono::duration<double> t_print_elapsed = NOW() - t_reduce;
         std::chrono::duration<double> t_elapsed = NOW() - start;
         std::fprintf(stderr, "-------\nconstructSegment time %.4f s, %.2f %%\n", t_construct, 100.0 * t_construct / t_elapsed.count());
         std::fprintf(stderr, "reduce time %.4f s, %.2f %%\n", t_reduce_elapsed.count(), 100.0 * t_reduce_elapsed.count() / t_elapsed.count());
+        std::fprintf(stderr, "print time %.4f s, %.2f %%\n", t_print_elapsed.count(), 100.0 * t_print_elapsed.count() / t_elapsed.count());
         std::fprintf(stderr, "Lobe %d total time %g\n\n", i, t_elapsed.count());
     }
     return 0;
