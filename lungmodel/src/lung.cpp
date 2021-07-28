@@ -338,10 +338,13 @@ void reduce() {
     const int64_t EMPTY_SLOT = std::numeric_limits<int64_t>::max();
     std::vector<std::atomic<int64_t>> elems(max_elems);
     std::cerr << "Calculating intersections for " << n << " epicells\n";
+    auto t_init = NOW();
 #pragma omp parallel for
     for (size_t i = 0; i < max_elems; i++) {
         elems[i] = EMPTY_SLOT;
     }
+    std::chrono::duration<double> t_elapsed = NOW() - t_init;
+    std::cerr << "Initializing the elems array took " << t_elapsed.count() << "\n";
     size_t numIntersectCells = 0;
     size_t num_dropped_inserts = 0;
 #pragma omp parallel
@@ -377,7 +380,7 @@ void reduce() {
         numIntersectCells += my_intersects;
     }
     size_t numCells = n;
-    std::chrono::duration<double> t_elapsed = NOW() - t;
+    t_elapsed = NOW() - t;
     std::cerr << "Calculating intersections took " << t_elapsed.count() << " s\n"
               << "Total cells " << numCells << " num intersections " << numIntersectCells
               << " (" << 100.0 * (double)numIntersectCells / numCells << " %)\n";
