@@ -468,6 +468,8 @@ void Tissue::accumulate_chemokines(HASH_TABLE<int64_t, float> &chemokines_to_upd
   timer.stop();
 }
 
+// TODO: add Tissue::accumulate_iterferon function 
+
 void Tissue::accumulate_virions(HASH_TABLE<int64_t, float> &virions_to_update,
                                 IntermittentTimer &timer) {
   timer.start();
@@ -508,6 +510,8 @@ float Tissue::get_chemokine(int64_t grid_i) {
              grid_points, grid_i)
       .wait();
 }
+
+// TODO: add Tissue::get_interferon function
 
 int64_t Tissue::get_num_circulating_tcells() { return num_circulating_tcells; }
 
