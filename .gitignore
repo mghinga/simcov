@@ -9,3 +9,4 @@ results
 transfer.sh
 batch-scripts/*.out
 *.pbs
+*.pbs.*
